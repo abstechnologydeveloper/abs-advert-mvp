@@ -159,7 +159,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
   };
 
   return (
-    <div className="border-b bg-gray-50 p-2 overflow-x-auto">
+    <div className="border-b bg-gray-50 p-2 overflow-x-auto relative">
       <div className="flex flex-nowrap items-center gap-0.5 min-w-max">
         {/* Text Formatting */}
         <div className="flex items-center gap-0.5 pr-2 mr-2 border-r border-gray-300">
@@ -207,7 +207,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
             <ChevronDown size={14} />
           </button>
           {showTypography && (
-            <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200  py-1 min-w-[200px] z-999">
+            <div
+              className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-1 min-w-[200px] z-50"
+              style={{
+                top: typographyRef.current
+                  ? typographyRef.current.getBoundingClientRect().bottom + 8
+                  : 0,
+                left: typographyRef.current
+                  ? typographyRef.current.getBoundingClientRect().left
+                  : 0,
+              }}
+            >
               {typographyOptions.map((option) => (
                 <button
                   key={option.name}
@@ -244,7 +254,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
               <Palette size={16} />
             </button>
             {showColorPicker && (
-              <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50 min-w-[200px]">
+              <div
+                className="fixed bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50 min-w-[200px]"
+                style={{
+                  top: colorPickerRef.current
+                    ? colorPickerRef.current.getBoundingClientRect().bottom + 8
+                    : 0,
+                  left: colorPickerRef.current
+                    ? colorPickerRef.current.getBoundingClientRect().left
+                    : 0,
+                }}
+              >
                 <p className="text-xs font-semibold text-gray-700 mb-2">Text Color</p>
                 <div className="grid grid-cols-3 gap-2">
                   {textColors.map((color) => (
@@ -284,7 +304,17 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
               <Highlighter size={16} />
             </button>
             {showHighlightPicker && (
-              <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50 min-w-[200px]">
+              <div
+                className="fixed bg-white rounded-lg shadow-xl border border-gray-200 p-3 z-50 min-w-[200px]"
+                style={{
+                  top: highlightPickerRef.current
+                    ? highlightPickerRef.current.getBoundingClientRect().bottom + 8
+                    : 0,
+                  left: highlightPickerRef.current
+                    ? highlightPickerRef.current.getBoundingClientRect().left
+                    : 0,
+                }}
+              >
                 <p className="text-xs font-semibold text-gray-700 mb-2">Highlight</p>
                 <div className="grid grid-cols-3 gap-2">
                   {highlightColors.map((color) => (
@@ -415,7 +445,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
             />
           </div>
         )}
-
 
         {/* Undo/Redo */}
         <div className="flex items-center gap-0.5 ml-auto">

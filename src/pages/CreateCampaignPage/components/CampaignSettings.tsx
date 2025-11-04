@@ -1,0 +1,514 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import {
+  Upload,
+  FileText,
+  X,
+  Building2,
+  Users,
+  GraduationCap,
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+
+interface CampaignSettingsProps {
+  formData: any;
+  setFormData: (data: any) => void;
+  attachments: File[];
+  setAttachments: (files: File[] | ((prev: File[]) => File[])) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  institutions: any[];
+  isLoadingInstitutions: boolean;
+}
+
+export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
+  formData,
+  setFormData,
+  attachments,
+  setAttachments,
+  fileInputRef,
+  institutions = [],
+  isLoadingInstitutions = false,
+}) => {
+  const [expandedSections, setExpandedSections] = useState({
+    basic: true,
+    audience: true,
+    attachments: false,
+  });
+
+  const [showInstitutionDropdown, setShowInstitutionDropdown] = useState(false);
+  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
+  const [showLevelDropdown, setShowLevelDropdown] = useState(false);
+
+  const institutionRef = useRef<HTMLDivElement>(null);
+  const departmentRef = useRef<HTMLDivElement>(null);
+  const levelRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (institutionRef.current && !institutionRef.current.contains(event.target as Node)) {
+        setShowInstitutionDropdown(false);
+      }
+      if (departmentRef.current && !departmentRef.current.contains(event.target as Node)) {
+        setShowDepartmentDropdown(false);
+      }
+      if (levelRef.current && !levelRef.current.contains(event.target as Node)) {
+        setShowLevelDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Merge departments and levels from selected institutions
+  const { mergedDepartments, mergedLevels } = useMemo(() => {
+    if (!formData.institutions || formData.institutions.length === 0) {
+      return { mergedDepartments: [], mergedLevels: [] };
+    }
+
+    const selectedInstitutions = institutions.filter((inst) =>
+      formData.institutions.includes(inst.institutionId)
+    );
+
+    const deptSet = new Set<string>();
+    const levelSet = new Set<string>();
+
+    selectedInstitutions.forEach((inst) => {
+      let depts: string[] = [];
+      if (inst.departments) {
+        if (Array.isArray(inst.departments)) {
+          depts = inst.departments;
+        } else if (typeof inst.departments === "string") {
+          try {
+            depts = JSON.parse(inst.departments);
+          } catch {
+            depts = [];
+          }
+        }
+      }
+
+      let lvls: string[] = [];
+      if (inst.levels) {
+        if (Array.isArray(inst.levels)) {
+          lvls = inst.levels;
+        } else if (typeof inst.levels === "string") {
+          try {
+            lvls = JSON.parse(inst.levels);
+          } catch {
+            lvls = [];
+          }
+        }
+      }
+
+      depts.forEach((dept) => deptSet.add(dept));
+      lvls.forEach((level) => levelSet.add(level));
+    });
+
+    return {
+      mergedDepartments: Array.from(deptSet).sort(),
+      mergedLevels: Array.from(levelSet).sort(),
+    };
+  }, [formData.institutions, institutions]);
+
+  const toggleSection = (section: keyof typeof expandedSections) => {
+    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const handleFileAttachment = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setAttachments((prev) => [...prev, ...files]);
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const toggleInstitution = (institutionId: string) => {
+    const current = formData.institutions || [];
+    const updated = current.includes(institutionId)
+      ? current.filter((id: string) => id !== institutionId)
+      : [...current, institutionId];
+
+    setFormData({
+      ...formData,
+      institutions: updated,
+      departments: [],
+      levels: [],
+    });
+  };
+
+  const toggleDepartment = (department: string) => {
+    const current = formData.departments || [];
+    const updated = current.includes(department)
+      ? current.filter((d: string) => d !== department)
+      : [...current, department];
+
+    setFormData({ ...formData, departments: updated });
+  };
+
+  const toggleLevel = (level: string) => {
+    const current = formData.levels || [];
+    const updated = current.includes(level)
+      ? current.filter((l: string) => l !== level)
+      : [...current, level];
+
+    setFormData({ ...formData, levels: updated });
+  };
+
+  const getSelectedInstitutionNames = () => {
+    if (!formData.institutions || formData.institutions.length === 0) {
+      return "Select institutions";
+    }
+    if (formData.institutions.length === 1) {
+      const inst = institutions.find((i) => i.institutionId === formData.institutions[0]);
+      return inst?.name || "1 selected";
+    }
+    return `${formData.institutions.length} institutions selected`;
+  };
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 border-b">
+        <h2 className="text-base font-bold text-gray-900">Campaign Settings</h2>
+        <p className="text-xs text-gray-600 mt-0.5">Configure campaign details</p>
+      </div>
+
+      <div className="divide-y divide-gray-100">
+        {/* Basic Information */}
+        <div>
+          <button
+            onClick={() => toggleSection("basic")}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                1
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900">Basic Info</h3>
+            </div>
+            {expandedSections.basic ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {expandedSections.basic && (
+            <div className="px-4 pb-4 space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Campaign Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Fall 2025 Newsletter"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Subject Line <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={formData.subject}
+                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Important Campus Update"
+                  required
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Audience Targeting */}
+        <div>
+          <button
+            onClick={() => toggleSection("audience")}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                2
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900">Audience</h3>
+            </div>
+            {expandedSections.audience ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {expandedSections.audience && (
+            <div className="px-4 pb-4 space-y-3">
+              {/* Target All Toggle */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Users size={14} className="text-gray-600" />
+                  <span className="text-xs font-medium text-gray-700">Target All Students</span>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.targetAll}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        targetAll: e.target.checked,
+                        institutions: e.target.checked ? [] : formData.institutions,
+                        departments: e.target.checked ? [] : formData.departments,
+                        levels: e.target.checked ? [] : formData.levels,
+                      })
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+
+              {!formData.targetAll && (
+                <>
+                  {/* Institutions Multi-Select */}
+                  <div ref={institutionRef} className="relative">
+                    <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
+                      <Building2 size={12} className="mr-1" />
+                      Institutions{" "}
+                      {isLoadingInstitutions && <Loader2 size={12} className="ml-2 animate-spin" />}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowInstitutionDropdown(!showInstitutionDropdown)}
+                      className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
+                      disabled={isLoadingInstitutions}
+                    >
+                      <span className="truncate">{getSelectedInstitutionNames()}</span>
+                      <ChevronDown size={16} className="flex-shrink-0 ml-2" />
+                    </button>
+
+                    {showInstitutionDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {institutions.length === 0 ? (
+                          <div className="px-3 py-2 text-xs text-gray-500">
+                            No institutions found
+                          </div>
+                        ) : (
+                          institutions.map((institution) => (
+                            <label
+                              key={institution.institutionId}
+                              className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.institutions?.includes(institution.institutionId)}
+                                onChange={() => toggleInstitution(institution.institutionId)}
+                                className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <span className="text-xs text-gray-900">{institution.name}</span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Departments Multi-Select */}
+                  {formData.institutions &&
+                    formData.institutions.length > 0 &&
+                    mergedDepartments.length > 0 && (
+                      <div ref={departmentRef} className="relative">
+                        <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
+                          <Users size={12} className="mr-1" />
+                          Departments
+                          {formData.institutions.length > 1 && (
+                            <span className="ml-2 text-xs text-blue-600">
+                              (from {formData.institutions.length} institutions)
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowDepartmentDropdown(!showDepartmentDropdown)}
+                          className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
+                        >
+                          <span className="truncate">
+                            {formData.departments?.length > 0
+                              ? `${formData.departments.length} department(s) selected`
+                              : "Select departments"}
+                          </span>
+                          <ChevronDown size={16} className="flex-shrink-0 ml-2" />
+                        </button>
+
+                        {showDepartmentDropdown && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {mergedDepartments.map((dept) => (
+                              <label
+                                key={dept}
+                                className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={formData.departments?.includes(dept)}
+                                  onChange={() => toggleDepartment(dept)}
+                                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-xs text-gray-900">{dept}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  {/* Levels Multi-Select */}
+                  {formData.institutions &&
+                    formData.institutions.length > 0 &&
+                    mergedLevels.length > 0 && (
+                      <div ref={levelRef} className="relative">
+                        <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
+                          <GraduationCap size={12} className="mr-1" />
+                          Student Levels
+                          {formData.institutions.length > 1 && (
+                            <span className="ml-2 text-xs text-blue-600">
+                              (from {formData.institutions.length} institutions)
+                            </span>
+                          )}
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setShowLevelDropdown(!showLevelDropdown)}
+                          className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
+                        >
+                          <span className="truncate">
+                            {formData.levels?.length > 0
+                              ? `${formData.levels.length} level(s) selected`
+                              : "Select levels"}
+                          </span>
+                          <ChevronDown size={16} className="flex-shrink-0 ml-2" />
+                        </button>
+
+                        {showLevelDropdown && (
+                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                            {mergedLevels.map((level) => (
+                              <label
+                                key={level}
+                                className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={formData.levels?.includes(level)}
+                                  onChange={() => toggleLevel(level)}
+                                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <span className="text-xs text-gray-900">{level}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                  {/* Info message when institutions selected */}
+                  {formData.institutions && formData.institutions.length > 0 && (
+                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
+                      <AlertCircle size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                      <p className="text-xs text-blue-800">
+                        {formData.institutions.length > 1
+                          ? `Departments and levels are merged from all ${formData.institutions.length} selected institutions. Students matching ALL selected criteria will receive the email.`
+                          : "Select departments and levels to further narrow your audience."}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Audience Summary */}
+                  <div className="p-2.5 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs text-blue-900">
+                      <strong>📊 Target Summary:</strong>{" "}
+                      {formData.institutions && formData.institutions.length > 0
+                        ? `${formData.institutions.length} institution(s)`
+                        : "No institution selected"}
+                      {formData.departments && formData.departments.length > 0 && (
+                        <> • {formData.departments.length} department(s)</>
+                      )}
+                      {formData.levels && formData.levels.length > 0 && (
+                        <> • {formData.levels.length} level(s)</>
+                      )}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Attachments */}
+        <div>
+          <button
+            onClick={() => toggleSection("attachments")}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition"
+          >
+            <div className="flex items-center">
+              <span className="w-5 h-5 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs mr-2">
+                3
+              </span>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Attachments {attachments.length > 0 && `(${attachments.length})`}
+              </h3>
+            </div>
+            {expandedSections.attachments ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+
+          {expandedSections.attachments && (
+            <div className="px-4 pb-4 space-y-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                onChange={handleFileAttachment}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full flex items-center justify-center space-x-2 px-3 py-2.5 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition text-xs font-medium text-gray-700"
+              >
+                <Upload size={16} />
+                <span>Upload files</span>
+              </button>
+
+              {attachments.length > 0 && (
+                <div className="space-y-2">
+                  {attachments.map((file, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <FileText size={14} className="text-green-600 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium text-gray-900 truncate">{file.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {(file.size / 1024).toFixed(1)} KB
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeAttachment(index)}
+                        className="p-1 hover:bg-red-100 rounded transition flex-shrink-0"
+                      >
+                        <X size={14} className="text-red-600" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

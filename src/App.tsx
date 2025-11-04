@@ -1,7 +1,7 @@
 // ============================================
 // FILE: src/App.tsx
 // ============================================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
@@ -13,15 +13,18 @@ import NoPermissionPage from "./components/NoPermissionPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage/ContactUsPage";
 import SettingsPage from "./pages/SettingsPage";
+import NotificationPage from "./pages/Notifications/NotificationPage";
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  const handleLogin = () => {
-    setIsAuthenticated(true);
-  };
+  useEffect(() => {
+    const token = localStorage.getItem("abs_token");
+    if (token) setIsAuthenticated(true);
+  }, []);
 
   const handleLogout = () => {
+    localStorage.removeItem("abs_token");
     setIsAuthenticated(false);
   };
 
@@ -31,15 +34,10 @@ const App: React.FC = () => {
         {/* Login Route */}
         <Route
           path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard/overview" replace />
-            ) : (
-              <LoginPage onLogin={handleLogin} />
-            )
-          }
+          element={isAuthenticated ? <Navigate to="/dashboard/overview" replace /> : <LoginPage />}
         />
 
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -50,14 +48,13 @@ const App: React.FC = () => {
             )
           }
         >
+          {/* Core Pages */}
           <Route path="overview" element={<OverviewPage />} />
-
-          {/* Email Campaign Routes */}
           <Route path="create-campaign" element={<CreateCampaignPage />} />
           <Route path="drafts" element={<DraftsPage />} />
           <Route path="history" element={<HistoryPage />} />
 
-          {/* Quills Advertising Routes */}
+          {/* Quills Ads */}
           <Route
             path="app-quills-ads"
             element={<NoPermissionPage feature="Quills Advertising" />}
@@ -71,7 +68,7 @@ const App: React.FC = () => {
             element={<NoPermissionPage feature="Quills Advertising" />}
           />
 
-          {/* Blog Advertising Routes */}
+          {/* Blog Ads */}
           <Route path="web-blog-ads" element={<NoPermissionPage feature="Blog Advertising" />} />
           <Route path="blog-ads-drafts" element={<NoPermissionPage feature="Blog Advertising" />} />
           <Route
@@ -79,7 +76,9 @@ const App: React.FC = () => {
             element={<NoPermissionPage feature="Blog Advertising" />}
           />
 
-          {/* Scholarship Routes */}
+          <Route path="notifications" element={<NotificationPage />} />
+
+          {/* Scholarship Ads */}
           <Route
             path="web-scholarship-ads"
             element={<NoPermissionPage feature="Scholarship Advertising" />}
@@ -97,7 +96,7 @@ const App: React.FC = () => {
             element={<NoPermissionPage feature="Scholarship Advertising" />}
           />
 
-          {/* Library Advertising Routes */}
+          {/* Library Ads */}
           <Route
             path="web-library-ads"
             element={<NoPermissionPage feature="Library Advertising" />}
@@ -115,12 +114,12 @@ const App: React.FC = () => {
             element={<NoPermissionPage feature="Library Advertising" />}
           />
 
-          {/* Settings and Other Pages */}
+          {/* Settings & Others */}
           <Route path="settings" element={<SettingsPage onLogout={handleLogout} />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
 
-          {/* Fallback */}
+          {/* Default Fallback */}
           <Route path="*" element={<OverviewPage />} />
         </Route>
 

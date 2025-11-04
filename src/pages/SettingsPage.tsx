@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { mockUser } from "../data/mockData";
+import { useGetStudentDetailsQuery } from "../redux/user/user-apis";
 
 interface SettingsPageProps {
   onLogout: () => void;
@@ -7,11 +7,16 @@ interface SettingsPageProps {
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("profile");
+
+  // ✅ Fetch real student data
+  const { data, isLoading, error } = useGetStudentDetailsQuery();
+  const student = data?.data;
+
   const [formData, setFormData] = useState({
-    name: mockUser.name,
-    email: mockUser.email,
+    name: "",
+    email: "",
     phone: "",
-    company: "Quills Inc.",
+    company: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -23,6 +28,21 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     weeklyReports: false,
     marketingEmails: false,
   });
+
+  // ✅ Prefill form when student data loads
+  React.useEffect(() => {
+    if (student) {
+      setFormData({
+        name: `${student.firstName || ""} ${student.lastName || ""}`,
+        email: student.email || "",
+        phone: student.phone || "",
+        company: student.school || "ABS Tech",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    }
+  }, [student]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -65,6 +85,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     { id: "account", label: "Account", icon: "⚙️" },
   ];
 
+  if (isLoading) return <div className="p-6 text-gray-600">Loading settings...</div>;
+  if (error) return <div className="p-6 text-red-500">Failed to load user profile</div>;
+
   return (
     <div className="md:p-4 p-3 sm:p-6 max-w-6xl mx-auto">
       <div className="mb-6 sm:mb-8">
@@ -75,7 +98,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-        {/* Tabs - Horizontal scroll on mobile */}
         <div className="border-b border-gray-200 overflow-x-auto">
           <nav className="flex space-x-4 sm:space-x-8 px-4 sm:px-6 min-w-max sm:min-w-0">
             {tabs.map((tab) => (
@@ -94,19 +116,20 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
             ))}
           </nav>
         </div>
-
-        {/* Tab Content */}
         <div className="p-4 sm:p-6">
-          {/* Profile Tab */}
           {activeTab === "profile" && (
             <div>
               <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Profile Information</h2>
               <form onSubmit={handleSaveProfile} className="space-y-6">
                 <div className="flex flex-col sm:flex-row items-center sm:space-x-6 mb-6 sm:mb-8">
                   <img
-                    src={mockUser.avatar}
-                    alt={mockUser.name}
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-gray-200 mb-4 sm:mb-0"
+                    src={
+                      student?.profilePicture?.profilePicture ||
+                      student?.avatar ||
+                      "/default-avatar.png"
+                    }
+                    alt={student?.firstName || "Profile"}
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-gray-200 mb-4 sm:mb-0 object-cover"
                   />
                   <div className="text-center sm:text-left">
                     <button
@@ -131,53 +154,36 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                       name="name"
                       value={formData.name}
                       onChange={handleInputChange}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                     <input
                       type="email"
                       name="email"
                       value={formData.email}
+                      disabled
                       onChange={handleInputChange}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 sm:px-4 py-2 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
-
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                     <input
                       type="tel"
                       name="phone"
                       value={formData.phone}
                       onChange={handleInputChange}
-                      placeholder="+1 (555) 000-0000"
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Company</label>
-                    <input
-                      type="text"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleInputChange}
-                      className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="+234 000 000 0000"
+                      className="w-full px-3 sm:px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
                 </div>
-
                 <div className="flex justify-end">
                   <button
                     type="submit"
-                    className="w-full sm:w-auto px-6 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     Save Changes
                   </button>
@@ -185,7 +191,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               </form>
             </div>
           )}
-
           {/* Security Tab */}
           {activeTab === "security" && (
             <div>
@@ -203,7 +208,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     New Password
@@ -229,14 +233,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     className="w-full px-3 sm:px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
-
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                   <p className="text-xs sm:text-sm text-blue-800">
                     <strong>Password requirements:</strong> At least 8 characters, including
                     uppercase, lowercase, numbers, and special characters.
                   </p>
                 </div>
-
                 <button
                   type="submit"
                   className="w-full sm:w-auto px-6 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -244,7 +246,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   Change Password
                 </button>
               </form>
-
               <div className="mt-6 sm:mt-8 pt-6 sm:pt-8 border-t border-gray-200">
                 <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4">
                   Two-Factor Authentication

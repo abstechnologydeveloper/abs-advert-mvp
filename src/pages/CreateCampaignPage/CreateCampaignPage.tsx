@@ -1,39 +1,63 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useRef, useEffect } from "react";
 import "../../prose-mirror.css";
 import { useEditor, EditorContent } from "@tiptap/react";
-import { editorExtensions } from "./editorConfig";
-import { Toolbar } from "./Toolbar";
-import { CampaignSettings } from "./CampaignSettings";
-import { SlashMenu } from "./SlashMenu";
-import { EditorBubbleMenu } from "./EditorBubbleMenu";
-import { Eye, Send, Save, Calendar } from "lucide-react";
-import { wrapEmailTemplate } from "./emailTemplate";
-import { EmailPreview } from "./EmailPreview";
+import { editorExtensions } from "./components/editorConfig";
+import { Toolbar } from "./components/Toolbar";
+import { CampaignSettings } from "./components/CampaignSettings";
+import { SlashMenu } from "./components/SlashMenu";
+import { EditorBubbleMenu } from "./components/EditorBubbleMenu";
+import { Eye, Send, Save, Calendar, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { wrapEmailTemplate } from "./components/emailTemplate";
+import { EmailPreview } from "./components/EmailPreview";
+import {
+  useCreateEmailCampaignMutation,
+  useGetSchoolsQuery,
+  useSaveDraftMutation,
+} from "../../redux/campaign/campaign-api";
 
 const CreateCampaignPage: React.FC = () => {
   const [formData, setFormData] = useState({
     name: "",
     subject: "",
-    audience: "all",
+    targetAll: false,
+    institutions: [] as string[],
+    departments: [] as string[],
+    levels: [] as string[],
+    sendNow: true,
+    sendAt: null as string | null,
+    recurring: false,
+    timeSlots: [] as string[],
+    campaignType: "EMAIL",
     fromName: "AbS",
     fromEmail: "hello@abstechconnect.com",
-    scheduleDate: "",
-    scheduleTime: "",
-    school: "all",
-    department: "all",
-    level: "all",
   });
   const [attachments, setAttachments] = useState<File[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 });
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const scheduleButtonRef = useRef<HTMLButtonElement>(null);
   const scheduleDropdownRef = useRef<HTMLDivElement>(null);
+
+  // API Hooks
+  const [createCampaign, { isLoading: isSending }] = useCreateEmailCampaignMutation();
+  const [saveDraft, { isLoading: isSavingDraft }] = useSaveDraftMutation();
+  const { data: institutionsData, isLoading: isLoadingInstitutions } = useGetSchoolsQuery({});
+
+  const institutions = institutionsData?.data || [];
+
+
+  console.log(institutionsData);
 
   // Handle Escape key to close slash menu and schedule dropdown
   useEffect(() => {
@@ -54,7 +78,6 @@ const CreateCampaignPage: React.FC = () => {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [showSlashMenu, showScheduleModal]);
 
-  // Close schedule dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -141,27 +164,162 @@ const CreateCampaignPage: React.FC = () => {
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const emailContent = wrapEmailTemplate(editor?.getHTML() || "", formData.subject);
-    console.log("Campaign submitted:", { ...formData, content: emailContent, attachments });
-    alert("✅ Campaign sent successfully!");
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
+
+    // Validation
+    if (!formData.name.trim()) {
+      setErrorMessage("Please enter a campaign name");
+      setShowErrorModal(true);
+      return;
+    }
+
+    if (!formData.subject.trim()) {
+      setErrorMessage("Please enter a subject line");
+      setShowErrorModal(true);
+      return;
+    }
+
+    if (!formData.targetAll && (!formData.institutions || formData.institutions.length === 0)) {
+      setErrorMessage("Please select at least one institution or enable 'Target All'");
+      setShowErrorModal(true);
+      return;
+    }
+
+    const content = editor?.getHTML() || "";
+    if (!content || content === "<p></p>") {
+      setErrorMessage("Please add email content");
+      setShowErrorModal(true);
+      return;
+    }
+
+    try {
+      const emailContent = wrapEmailTemplate(content, formData.subject);
+      const campaignData = new FormData();
+
+      // Add basic fields
+      campaignData.append("name", formData.name);
+      campaignData.append("subject", formData.subject);
+      campaignData.append("content", emailContent);
+      campaignData.append("targetAll", String(formData.targetAll));
+      campaignData.append("sendNow", String(formData.sendNow));
+      campaignData.append("recurring", String(formData.recurring));
+      campaignData.append("campaignType", formData.campaignType);
+
+      // Add arrays
+      if (!formData.targetAll) {
+        formData.institutions.forEach((inst) => {
+          campaignData.append("institutions[]", inst);
+        });
+        formData.departments.forEach((dept) => {
+          campaignData.append("departments[]", dept);
+        });
+        formData.levels.forEach((level) => {
+          campaignData.append("levels[]", level);
+        });
+      }
+
+      // Add schedule if applicable
+      if (formData.sendAt) {
+        campaignData.append("sendAt", formData.sendAt);
+      }
+
+      // Add attachments
+      attachments.forEach((file) => {
+        campaignData.append("attachments", file);
+      });
+
+      await createCampaign(campaignData).unwrap();
+
+      setShowSuccessModal(true);
+
+      // Reset form after success
+      setTimeout(() => {
+        setFormData({
+          name: "",
+          subject: "",
+          targetAll: false,
+          institutions: [],
+          departments: [],
+          levels: [],
+          sendNow: true,
+          sendAt: null,
+          recurring: false,
+          timeSlots: [],
+          campaignType: "EMAIL",
+          fromName: "AbS",
+          fromEmail: "hello@abstechconnect.com",
+        });
+        setAttachments([]);
+        setScheduleDate("");
+        setScheduleTime("");
+        editor?.commands.setContent("<p></p>");
+        setShowSuccessModal(false);
+      }, 3000);
+    } catch (error: any) {
+      console.error("Error creating campaign:", error);
+      setErrorMessage(error?.data?.message || "Failed to create campaign. Please try again.");
+      setShowErrorModal(true);
+    }
   };
 
-  const handleSaveDraft = () => {
-    const emailContent = wrapEmailTemplate(editor?.getHTML() || "", formData.subject);
-    console.log("Draft saved:", { ...formData, content: emailContent });
-    alert("💾 Draft saved successfully!");
+  const handleSaveDraft = async () => {
+    if (!formData.name.trim()) {
+      setErrorMessage("Please enter a campaign name before saving");
+      setShowErrorModal(true);
+      return;
+    }
+
+    try {
+      const content = editor?.getHTML() || "";
+      const emailContent = wrapEmailTemplate(content, formData.subject);
+
+      const draftData = {
+        name: formData.name,
+        subject: formData.subject,
+        content: emailContent,
+        targetAll: formData.targetAll,
+        institutions: formData.institutions,
+        departments: formData.departments,
+        levels: formData.levels,
+        campaignType: formData.campaignType,
+      };
+
+      await saveDraft(draftData).unwrap();
+
+      alert("💾 Draft saved successfully!");
+    } catch (error: any) {
+      console.error("Error saving draft:", error);
+      setErrorMessage(error?.data?.message || "Failed to save draft. Please try again.");
+      setShowErrorModal(true);
+    }
   };
 
   const handleSchedule = () => {
-    if (!formData.scheduleDate || !formData.scheduleTime) {
-      alert("Please select date and time");
+    if (!scheduleDate || !scheduleTime) {
+      setErrorMessage("Please select both date and time");
+      setShowErrorModal(true);
       return;
     }
-    console.log("Campaign scheduled:", formData);
-    alert(`📅 Campaign scheduled for ${formData.scheduleDate} at ${formData.scheduleTime}`);
+
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+
+    if (scheduledDateTime <= new Date()) {
+      setErrorMessage("Scheduled time must be in the future");
+      setShowErrorModal(true);
+      return;
+    }
+
+    setFormData({
+      ...formData,
+      sendNow: false,
+      sendAt: scheduledDateTime.toISOString(),
+    });
+
     setShowScheduleModal(false);
+
+    // Submit the scheduled campaign
+    handleSubmit();
   };
 
   if (!editor) {
@@ -189,6 +347,8 @@ const CreateCampaignPage: React.FC = () => {
                   attachments={attachments}
                   setAttachments={setAttachments}
                   fileInputRef={fileInputRef}
+                  institutions={institutions}
+                  isLoadingInstitutions={isLoadingInstitutions}
                 />
               </div>
             </div>
@@ -217,10 +377,15 @@ const CreateCampaignPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSaveDraft}
-                        className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-white bg-white/20 hover:bg-white/30 rounded-lg transition backdrop-blur-sm"
+                        disabled={isSavingDraft}
+                        className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-white bg-white/20 hover:bg-white/30 rounded-lg transition backdrop-blur-sm disabled:opacity-50"
                         title="Save Draft"
                       >
-                        <Save size={16} className="sm:mr-1" />
+                        {isSavingDraft ? (
+                          <Loader2 size={16} className="animate-spin sm:mr-1" />
+                        ) : (
+                          <Save size={16} className="sm:mr-1" />
+                        )}
                         <span className="hidden sm:inline">Draft</span>
                       </button>
                       <div className="relative">
@@ -251,10 +416,9 @@ const CreateCampaignPage: React.FC = () => {
                                 </label>
                                 <input
                                   type="date"
-                                  value={formData.scheduleDate}
-                                  onChange={(e) =>
-                                    setFormData({ ...formData, scheduleDate: e.target.value })
-                                  }
+                                  value={scheduleDate}
+                                  onChange={(e) => setScheduleDate(e.target.value)}
+                                  min={new Date().toISOString().split("T")[0]}
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                               </div>
@@ -264,10 +428,8 @@ const CreateCampaignPage: React.FC = () => {
                                 </label>
                                 <input
                                   type="time"
-                                  value={formData.scheduleTime}
-                                  onChange={(e) =>
-                                    setFormData({ ...formData, scheduleTime: e.target.value })
-                                  }
+                                  value={scheduleTime}
+                                  onChange={(e) => setScheduleTime(e.target.value)}
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                               </div>
@@ -303,24 +465,23 @@ const CreateCampaignPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={handleSubmit}
-                        className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-1.5 text-xs sm:text-sm bg-white text-blue-600 hover:bg-gray-50 rounded-lg transition shadow-sm font-semibold"
+                        disabled={isSending}
+                        className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-1.5 text-xs sm:text-sm bg-white text-blue-600 hover:bg-gray-50 rounded-lg transition shadow-sm font-semibold disabled:opacity-50"
                       >
-                        <Send size={16} className="mr-1" />
+                        {isSending ? (
+                          <Loader2 size={16} className="mr-1 animate-spin" />
+                        ) : (
+                          <Send size={16} className="mr-1" />
+                        )}
                         <span>Send</span>
                       </button>
                     </div>
                   </div>
                 </div>
-
-                {/* Toolbar */}
                 <Toolbar editor={editor} imageInputRef={imageInputRef} />
-
-                {/* Editor Content Area */}
                 <div className=" bg-gray-50 min-h-[400px] sm:min-h-[600px]">
                   <div className="max-w-4xl mx-auto">
-                    {/* Email Content Card */}
                     <div className="bg-white border-gray-200 overflow-hidden">
-                      {/* Subject Line Preview */}
                       {formData.subject && (
                         <div className="bg-blue-50 border-b border-blue-100 px-4 sm:px-6 py-2 sm:py-3">
                           <p className="text-xs text-gray-500 mb-0.5">Subject:</p>
@@ -441,6 +602,48 @@ const CreateCampaignPage: React.FC = () => {
         }}
         className="hidden"
       />
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                {formData.sendAt ? "Campaign Scheduled!" : "Campaign Sent!"}
+              </h3>
+              <p className="text-gray-600">
+                {formData.sendAt
+                  ? "Your email campaign has been scheduled successfully."
+                  : "Your email campaign has been sent successfully."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {showErrorModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-2xl">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <XCircle size={32} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Error</h3>
+              <p className="text-gray-600 mb-4">{errorMessage}</p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
