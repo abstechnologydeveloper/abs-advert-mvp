@@ -22,7 +22,6 @@ import {
   Highlighter,
   Quote,
   Minus,
-  RemoveFormatting,
   Type,
   ChevronDown,
 } from "lucide-react";
@@ -208,7 +207,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
             <ChevronDown size={14} />
           </button>
           {showTypography && (
-            <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1 min-w-[200px] z-999">
+            <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200  py-1 min-w-[200px] z-999">
               {typographyOptions.map((option) => (
                 <button
                   key={option.name}
