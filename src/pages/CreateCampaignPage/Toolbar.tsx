@@ -11,9 +11,6 @@ import {
   AlignJustify,
   List,
   ListOrdered,
-  Heading1,
-  Heading2,
-  Heading3,
   Table,
   ImagePlus,
   Link2,
@@ -26,6 +23,8 @@ import {
   Quote,
   Minus,
   RemoveFormatting,
+  Type,
+  ChevronDown,
 } from "lucide-react";
 
 interface ToolbarProps {
@@ -36,8 +35,10 @@ interface ToolbarProps {
 export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
+  const [showTypography, setShowTypography] = useState(false);
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const highlightPickerRef = useRef<HTMLDivElement>(null);
+  const typographyRef = useRef<HTMLDivElement>(null);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -50,6 +51,9 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
         !highlightPickerRef.current.contains(event.target as Node)
       ) {
         setShowHighlightPicker(false);
+      }
+      if (typographyRef.current && !typographyRef.current.contains(event.target as Node)) {
+        setShowTypography(false);
       }
     };
 
@@ -100,6 +104,56 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
     { name: "Red", value: "#fecaca" },
   ];
 
+  const typographyOptions = [
+    {
+      name: "Paragraph",
+      action: () => editor.chain().focus().setParagraph().run(),
+      isActive: () => editor.isActive("paragraph"),
+      style: "text-base",
+    },
+    {
+      name: "Heading 1",
+      action: () => editor.chain().focus().toggleHeading({ level: 1 }).run(),
+      isActive: () => editor.isActive("heading", { level: 1 }),
+      style: "text-3xl font-bold",
+    },
+    {
+      name: "Heading 2",
+      action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
+      isActive: () => editor.isActive("heading", { level: 2 }),
+      style: "text-2xl font-bold",
+    },
+    {
+      name: "Heading 3",
+      action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
+      isActive: () => editor.isActive("heading", { level: 3 }),
+      style: "text-xl font-bold",
+    },
+    {
+      name: "Heading 4",
+      action: () => editor.chain().focus().toggleHeading({ level: 4 }).run(),
+      isActive: () => editor.isActive("heading", { level: 4 }),
+      style: "text-lg font-bold",
+    },
+    {
+      name: "Heading 5",
+      action: () => editor.chain().focus().toggleHeading({ level: 5 }).run(),
+      isActive: () => editor.isActive("heading", { level: 5 }),
+      style: "text-base font-bold",
+    },
+    {
+      name: "Heading 6",
+      action: () => editor.chain().focus().toggleHeading({ level: 6 }).run(),
+      isActive: () => editor.isActive("heading", { level: 6 }),
+      style: "text-sm font-bold",
+    },
+  ];
+
+  const getActiveTypography = () => {
+    const active = typographyOptions.find((option) => option.isActive());
+    return active?.name || "Paragraph";
+  };
+
   const setLink = () => {
     const url = prompt("Enter link URL:");
     if (url) editor.chain().focus().setLink({ href: url }).run();
@@ -136,26 +190,43 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
           />
         </div>
 
-        {/* Headings */}
-        <div className="hidden sm:flex items-center gap-0.5 pr-2 mr-2 border-r border-gray-300">
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-            isActive={editor.isActive("heading", { level: 1 })}
-            icon={<Heading1 size={16} />}
-            title="Heading 1"
-          />
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-            isActive={editor.isActive("heading", { level: 2 })}
-            icon={<Heading2 size={16} />}
-            title="Heading 2"
-          />
-          <ToolbarButton
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-            isActive={editor.isActive("heading", { level: 3 })}
-            icon={<Heading3 size={16} />}
-            title="Heading 3"
-          />
+        {/* Typography Dropdown */}
+        <div
+          className="flex items-center gap-0.5 pr-2 mr-2 border-r border-gray-300 relative"
+          ref={typographyRef}
+        >
+          <button
+            type="button"
+            onClick={() => setShowTypography(!showTypography)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 text-sm font-medium min-w-[120px] justify-between"
+            title="Typography"
+          >
+            <div className="flex items-center gap-1.5">
+              <Type size={16} />
+              <span className="hidden sm:inline">{getActiveTypography()}</span>
+            </div>
+            <ChevronDown size={14} />
+          </button>
+          {showTypography && (
+            <div className="absolute top-full mt-2 left-0 bg-white rounded-lg shadow-xl border border-gray-200 z-50 py-1 min-w-[200px] z-999">
+              {typographyOptions.map((option) => (
+                <button
+                  key={option.name}
+                  type="button"
+                  onClick={() => {
+                    option.action();
+                    setShowTypography(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-left hover:bg-blue-50 transition flex items-center justify-between ${
+                    option.isActive() ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                  }`}
+                >
+                  <span className={option.style}>{option.name}</span>
+                  {option.isActive() && <span className="text-blue-600 text-xs">✓</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Color Pickers */}
@@ -346,14 +417,6 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
           </div>
         )}
 
-        {/* Clear Formatting */}
-        <div className="flex items-center gap-0.5 pr-2 mr-2 border-r border-gray-300">
-          <ToolbarButton
-            onClick={() => editor.chain().focus().clearNodes().unsetAllMarks().run()}
-            icon={<RemoveFormatting size={16} />}
-            title="Clear Formatting"
-          />
-        </div>
 
         {/* Undo/Redo */}
         <div className="flex items-center gap-0.5 ml-auto">

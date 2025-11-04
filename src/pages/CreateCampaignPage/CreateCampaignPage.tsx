@@ -74,7 +74,6 @@ const CreateCampaignPage: React.FC = () => {
 
   const editor = useEditor({
     extensions: editorExtensions,
-    content: `<p>Start writing your email campaign content here...</p>`,
     editorProps: {
       attributes: {
         class: "email-editor-content",
