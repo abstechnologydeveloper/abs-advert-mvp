@@ -343,7 +343,7 @@ const CreateCampaignPage: React.FC = () => {
       } else {
         await saveDraft(draftFormData).unwrap();
         setToast({ message: "Draft saved successfully!", type: "success" });
-        setTimeout(() => navigate("/drafts"), 1500);
+        setTimeout(() => navigate("/dashboard/drafts"), 1500);
       }
     } catch (error: any) {
       setToast({
