@@ -30,6 +30,7 @@ import {
 } from "../../redux/campaign/campaign-api";
 import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 
+
 const CreateCampaignPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const params = useParams();
@@ -322,16 +323,11 @@ const CreateCampaignPage: React.FC = () => {
       formData.timeSlots.forEach((slot) => draftFormData.append("timeSlots[]", slot));
 
       if (!formData.targetAll) {
-        formData.institutions.forEach((inst) => {
-          draftFormData.append("institutions[]", inst);
-        });
-        formData.departments.forEach((dept) => {
-          draftFormData.append("departments[]", dept);
-        });
-        formData.levels.forEach((level) => {
-          draftFormData.append("levels[]", level);
-        });
+        campaignData.append("institutions", JSON.stringify(formData.institutions));
+        campaignData.append("departments", JSON.stringify(formData.departments));
+        campaignData.append("levels", JSON.stringify(formData.levels));
       }
+
       attachments.forEach((file) => {
         draftFormData.append("attachments", file);
       });
@@ -354,6 +350,8 @@ const CreateCampaignPage: React.FC = () => {
   };
 
   // Send
+  // Fixed handleSubmit function for CreateCampaignPage.tsx
+
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
 
@@ -390,17 +388,29 @@ const CreateCampaignPage: React.FC = () => {
       campaignData.append("recurring", String(formData.recurring));
       campaignData.append("campaignType", formData.campaignType);
 
+      if (draftId) {
+        campaignData.append("campaignId", draftId);
+      }
+
+      // FIX: Send arrays as JSON strings for FormData
       if (!formData.targetAll) {
-        formData.institutions.forEach((inst) => campaignData.append("institutions[]", inst));
-        formData.departments.forEach((dept) => campaignData.append("departments[]", dept));
-        formData.levels.forEach((level) => campaignData.append("levels[]", level));
+        campaignData.append("institutions", JSON.stringify(formData.institutions));
+        campaignData.append("departments", JSON.stringify(formData.departments));
+        campaignData.append("levels", JSON.stringify(formData.levels));
       }
 
       if (formData.sendAt) {
         campaignData.append("sendAt", formData.sendAt);
       }
 
+      // FIX: Send timeSlots as JSON string
+      if (formData.timeSlots && formData.timeSlots.length > 0) {
+        campaignData.append("timeSlots", JSON.stringify(formData.timeSlots));
+      }
+
+      // Attachments
       attachments.forEach((file) => campaignData.append("attachments", file));
+
       await createCampaign(campaignData)
         .unwrap()
         .then((res) => {

@@ -13,10 +13,10 @@ import {
   CheckCircle2,
   XCircle,
   Filter,
+  Edit3,
 } from "lucide-react";
 import { useGetHistoryQuery, useResendCampaignMutation } from "../../redux/campaign/campaign-api";
 import { CampaignStatus } from "../../types/models";
-
 
 const HistoryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +58,10 @@ const HistoryPage: React.FC = () => {
         setResendingId(null);
       }
     }
+  };
+
+  const handleEdit = (id: string) => {
+    navigate(`/dashboard/edit-failed/${id}`);
   };
 
   const formatDate = (date: string | Date) => {
@@ -265,11 +269,24 @@ const HistoryPage: React.FC = () => {
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             onClick={() => navigate(`/dashboard/campaign/${campaign.id}`)}
-                            className="text-blue-600 hover:text-blue-900 mr-4 inline-flex items-center"
+                            className="text-blue-600 hover:text-blue-900 mr-3 inline-flex items-center"
                           >
                             <Eye size={16} className="mr-1" />
                             View
                           </button>
+
+                          {/* Edit Button - Only for FAILED */}
+                          {campaign.status === "FAILED" && (
+                            <button
+                              onClick={() => handleEdit(campaign.id)}
+                              className="text-orange-600 hover:text-orange-800 mr-3 inline-flex items-center"
+                            >
+                              <Edit3 size={16} className="mr-1" />
+                              Edit
+                            </button>
+                          )}
+
+                          {/* Resend Button - Only for SENT */}
                           {campaign.status === "SENT" && (
                             <button
                               onClick={() => handleResend(campaign.id)}
@@ -331,8 +348,21 @@ const HistoryPage: React.FC = () => {
                         className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition inline-flex items-center justify-center"
                       >
                         <Eye size={16} className="mr-1" />
-                        View Details
+                        View
                       </button>
+
+                      {/* Edit Button on Mobile - FAILED only */}
+                      {campaign.status === "FAILED" && (
+                        <button
+                          onClick={() => handleEdit(campaign.id)}
+                          className="flex-1 px-3 py-2 text-sm bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition inline-flex items-center justify-center"
+                        >
+                          <Edit3 size={16} className="mr-1" />
+                          Edit
+                        </button>
+                      )}
+
+                      {/* Resend Button on Mobile - SENT only */}
                       {campaign.status === "SENT" && (
                         <button
                           onClick={() => handleResend(campaign.id)}

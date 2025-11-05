@@ -69,6 +69,7 @@ const App: React.FC = () => {
           {/* Campaign Details */}
           <Route path="campaign/:id" element={<CampaignDetailsPage />} />
           <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
+          <Route path="edit-failed/:id" element={<CreateCampaignPage />} />
 
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
