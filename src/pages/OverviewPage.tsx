@@ -15,11 +15,12 @@ import {
   XCircle,
 } from "lucide-react";
 import { useGetCampaignStatisticsQuery } from "../redux/campaign/campaign-api";
-
+import { useNavigate } from "react-router-dom";
+import { Campaign } from "../types/models";
 
 const OverviewPage: React.FC = () => {
   const { data: response, isLoading, error } = useGetCampaignStatisticsQuery({});
-
+  const navigate = useNavigate();
   const stats = response?.data?.overview;
   const recentCampaigns = response?.data?.recentCampaigns || [];
 
@@ -227,10 +228,16 @@ const OverviewPage: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {recentCampaigns.map((campaign: any) => (
+            {recentCampaigns.map((campaign: Campaign) => (
               <div
                 key={campaign.id}
-                className="p-5 hover:bg-gray-50 transition-colors duration-150"
+                className="p-5 hover:bg-gray-50 transition-colors duration-150 cursor-pointer"
+                onClick={() => {
+                  if (campaign.status !== "DRAFT") navigate(`/dashboard/campaign/${campaign.id}`);
+                  else if (campaign.status === "DRAFT") {
+                    navigate(`/dashboard/edit-draft/${campaign.id}`);
+                  }
+                }}
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
@@ -255,7 +262,7 @@ const OverviewPage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <Calendar size={12} />
-                            Created {formatDateTime(campaign.createdAt)}
+                            Created {formatDateTime(campaign.createdAt.toString())}
                           </span>
                           {campaign.emailsSent > 0 && (
                             <span className="flex items-center gap-1 text-green-600 font-medium">
@@ -272,7 +279,7 @@ const OverviewPage: React.FC = () => {
                           {campaign.sendAt && campaign.status === "SCHEDULED" && (
                             <span className="flex items-center gap-1 text-blue-600 font-medium">
                               <Clock size={12} />
-                              {formatDateTime(campaign.sendAt)}
+                              {formatDateTime(campaign.sendAt.toString())}
                             </span>
                           )}
                         </div>

@@ -8,7 +8,7 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const { data, isLoading, error } = useGetStudentDetailsQuery();
   const { data: unreadData } = useGetUnreadCountQuery({});
-  const notificationCount = unreadData?.count || 0;
+  const notificationCount = unreadData?.data?.unreadCount || 0;
 
   if (isLoading) return <div className="p-4 text-gray-600">Loading student info...</div>;
   if (error) return <div className="p-4 text-red-500">Failed to load profile</div>;

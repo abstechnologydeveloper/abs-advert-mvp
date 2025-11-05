@@ -2,9 +2,6 @@ import api from "../api";
 
 export const notificationServiceApis = api.injectEndpoints({
   endpoints: (builder) => ({
-    // ==========================
-    // 🔔 FETCHING NOTIFICATIONS
-    // ==========================
     getNotifications: builder.query({
       query: ({ page = 1, limit = 10, search = "" }) =>
         `/ads/notification/?page=${page}&limit=${limit}&search=${search}`,

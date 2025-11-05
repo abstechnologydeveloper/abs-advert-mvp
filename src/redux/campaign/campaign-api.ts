@@ -8,7 +8,7 @@ export const campaignServiceApi = api.injectEndpoints({
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: ["Campaigns", "Stats"],
+      invalidatesTags: ["Campaigns", "Stats", "Drafts", "History", "Notifications"],
     }),
 
     resendCampaign: builder.mutation({
@@ -16,7 +16,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/resend`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "History", "Stats"],
+      invalidatesTags: ["Campaigns", "History", "Stats", "Notifications"],
     }),
 
     approveCampaign: builder.mutation({
@@ -24,7 +24,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/approve`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats"],
+      invalidatesTags: ["Campaigns", "Stats", "Notifications"],
     }),
 
     cancelCampaign: builder.mutation({
@@ -32,7 +32,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/cancel`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats"],
+      invalidatesTags: ["Campaigns", "Stats", "Notifications"],
     }),
 
     deleteCampaign: builder.mutation({
@@ -40,12 +40,17 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Campaigns", "Drafts", "History"],
+      invalidatesTags: ["Campaigns", "Drafts", "History", "Stats", "Notifications"],
     }),
 
     getCampaignById: builder.query({
-      query: (id) => `/ads/campaigns/${id}`,
-      providesTags: ["Campaigns"],
+      query: (id) => {
+        console.log("getCampaignById called with ID:", id);
+        return `/ads/campaigns/${id}`;
+      },
+      providesTags: (result, error, id) => [{ type: "Campaigns", id }],
+      // Force refetch on every mount to ensure fresh data
+      keepUnusedDataFor: 0,
     }),
 
     getCampaignStatistics: builder.query({
@@ -62,16 +67,19 @@ export const campaignServiceApi = api.injectEndpoints({
         method: "POST",
         body: data,
       }),
-      invalidatesTags: ["Drafts"],
+      invalidatesTags: ["Drafts", "Stats"],
     }),
 
     updateDraft: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `/ads/campaigns/draft/${id}`,
-        method: "PUT",
-        body: data,
-      }),
-      invalidatesTags: ["Drafts"],
+      query: ({ id, data }) => {
+        console.log("📤 updateDraft payload >>>", { id, data }); // 👈 add this line
+        return {
+          url: `/ads/campaigns/draft/${id}`,
+          method: "PUT",
+          body: data,
+        };
+      },
+      invalidatesTags: (result, error, { id }) => ["Drafts", { type: "Campaigns", id }],
     }),
 
     getDrafts: builder.query({
@@ -96,6 +104,14 @@ export const campaignServiceApi = api.injectEndpoints({
       query: () => `/ads/campaigns/schools`,
       providesTags: ["Schools"],
     }),
+
+    uploadAttachments: builder.mutation({
+      query: (formData: FormData) => ({
+        url: `/ads/campaigns/upload`,
+        method: "POST",
+        body: formData,
+      }),
+    }),
   }),
 });
 
@@ -112,4 +128,5 @@ export const {
   useGetDraftsQuery,
   useGetHistoryQuery,
   useGetSchoolsQuery,
+  useUploadAttachmentsMutation,
 } = campaignServiceApi;

@@ -13,8 +13,8 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
-    const { data: unreadData } = useGetUnreadCountQuery({});
-    const notificationCount = unreadData?.count || 0;
+  const { data: unreadData } = useGetUnreadCountQuery({});
+  const notificationCount = unreadData?.data?.unreadCount || 0;
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +53,9 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
     </svg>
   );
 
+  const handleNotificationClick = () => {
+    navigate("/dashboard/notifications");
+  };
 
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
@@ -78,7 +81,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
             {/* Right Side: Notification + Profile */}
             <div className="flex items-center space-x-4">
               {/* Notification Icon */}
-              <div className="relative cursor-pointer" onClick={() => alert("Open notifications")}>
+              <div className="relative cursor-pointer" onClick={handleNotificationClick}>
                 <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 transition" />
                 {notificationCount > 0 && (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1">

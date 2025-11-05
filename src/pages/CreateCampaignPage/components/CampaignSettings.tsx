@@ -11,6 +11,7 @@ import {
   ChevronUp,
   AlertCircle,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 
 interface CampaignSettingsProps {
@@ -18,6 +19,8 @@ interface CampaignSettingsProps {
   setFormData: (data: any) => void;
   attachments: File[];
   setAttachments: (files: File[] | ((prev: File[]) => File[])) => void;
+  existingAttachments?: any[];
+  setExistingAttachments?: (attachments: any[]) => void;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   institutions: any[];
   isLoadingInstitutions: boolean;
@@ -28,6 +31,8 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
   setFormData,
   attachments,
   setAttachments,
+  existingAttachments = [],
+  setExistingAttachments,
   fileInputRef,
   institutions = [],
   isLoadingInstitutions = false,
@@ -127,6 +132,12 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
     setAttachments((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removeExistingAttachment = (index: number) => {
+    if (setExistingAttachments) {
+      setExistingAttachments(existingAttachments.filter((_, i) => i !== index));
+    }
+  };
+
   const toggleInstitution = (institutionId: string) => {
     const current = formData.institutions || [];
     const updated = current.includes(institutionId)
@@ -169,6 +180,18 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
     }
     return `${formData.institutions.length} institutions selected`;
   };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getFileName = (attachment: any) => {
+    return attachment.originalName || attachment.filename || "Attachment";
+  };
+
+  const totalAttachments = existingAttachments.length + attachments.length;
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -454,7 +477,7 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 3
               </span>
               <h3 className="text-sm font-semibold text-gray-900">
-                Attachments {attachments.length > 0 && `(${attachments.length})`}
+                Attachments {totalAttachments > 0 && `(${totalAttachments})`}
               </h3>
             </div>
             {expandedSections.attachments ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -478,20 +501,68 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 <span>Upload files</span>
               </button>
 
+              {/* Existing Attachments (from draft/campaign) */}
+              {existingAttachments.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-700">Existing Files:</p>
+                  {existingAttachments.map((file, index) => (
+                    <div
+                      key={`existing-${index}`}
+                      className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-2 min-w-0 flex-1">
+                        <FileText size={14} className="text-blue-600 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-medium text-gray-900 truncate">
+                            {getFileName(file)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {file.size ? formatFileSize(file.size) : "Unknown size"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {file.url && (
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 hover:bg-blue-100 rounded transition"
+                            title="View file"
+                          >
+                            <ExternalLink size={14} className="text-blue-600" />
+                          </a>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeExistingAttachment(index)}
+                          className="p-1 hover:bg-red-100 rounded transition"
+                          title="Remove file"
+                        >
+                          <X size={14} className="text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* New Attachments (not yet uploaded) */}
               {attachments.length > 0 && (
                 <div className="space-y-2">
+                  {existingAttachments.length > 0 && (
+                    <p className="text-xs font-medium text-gray-700">New Files:</p>
+                  )}
                   {attachments.map((file, index) => (
                     <div
-                      key={index}
+                      key={`new-${index}`}
                       className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded-lg"
                     >
                       <div className="flex items-center space-x-2 min-w-0">
                         <FileText size={14} className="text-green-600 flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-900 truncate">{file.name}</p>
-                          <p className="text-xs text-gray-500">
-                            {(file.size / 1024).toFixed(1)} KB
-                          </p>
+                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                         </div>
                       </div>
                       <button

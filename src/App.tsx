@@ -1,6 +1,3 @@
-// ============================================
-// FILE: src/App.tsx
-// ============================================
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
@@ -14,19 +11,31 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage/ContactUsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotificationPage from "./pages/Notifications/NotificationPage";
+import CampaignDetailsPage from "./pages/CampaignDetailPage/CampaignDetailPage";
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null); // null = checking
 
   useEffect(() => {
     const token = localStorage.getItem("abs_token");
-    if (token) setIsAuthenticated(true);
+    setIsAuthenticated(!!token);
   }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("abs_token");
     setIsAuthenticated(false);
   };
+
+  if (isAuthenticated === null) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gray-50">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
+          <p className="text-gray-600 text-sm font-medium">Checking your session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -48,11 +57,21 @@ const App: React.FC = () => {
             )
           }
         >
+          {/* Default redirect: when visiting /dashboard directly */}
+          <Route index element={<Navigate to="overview" replace />} />
+
           {/* Core Pages */}
           <Route path="overview" element={<OverviewPage />} />
           <Route path="create-campaign" element={<CreateCampaignPage />} />
           <Route path="drafts" element={<DraftsPage />} />
           <Route path="history" element={<HistoryPage />} />
+
+          {/* Campaign Details */}
+          <Route path="campaign/:id" element={<CampaignDetailsPage />} />
+          <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
+
+          {/* Notifications */}
+          <Route path="notifications" element={<NotificationPage />} />
 
           {/* Quills Ads */}
           <Route
@@ -75,8 +94,6 @@ const App: React.FC = () => {
             path="blog-ads-history"
             element={<NoPermissionPage feature="Blog Advertising" />}
           />
-
-          <Route path="notifications" element={<NotificationPage />} />
 
           {/* Scholarship Ads */}
           <Route
@@ -119,12 +136,21 @@ const App: React.FC = () => {
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
 
-          {/* Default Fallback */}
-          <Route path="*" element={<OverviewPage />} />
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="overview" replace />} />
         </Route>
 
         {/* Redirect root */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/dashboard/overview" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
       </Routes>
     </Router>
   );

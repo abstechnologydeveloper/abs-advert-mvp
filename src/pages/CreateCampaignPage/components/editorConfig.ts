@@ -27,10 +27,29 @@ export const editorExtensions = [
     multicolor: true,
   }),
   Image.configure({
-    inline: false,
+    inline: true,
     allowBase64: true,
     HTMLAttributes: {
-      class: "email-content-image",
+      class: "editor-image",
+    },
+  }).extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        uploading: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("data-uploading"),
+          renderHTML: (attributes) => {
+            if (!attributes.uploading) {
+              return {};
+            }
+            return {
+              "data-uploading": attributes.uploading,
+              class: "uploading-image",
+            };
+          },
+        },
+      };
     },
   }),
   Link.configure({
