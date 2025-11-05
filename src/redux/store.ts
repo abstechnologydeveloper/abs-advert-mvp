@@ -7,7 +7,8 @@ const store = configureStore({
     [api.reducerPath]: api.reducer,
     [authServiceApis.reducerPath]: authServiceApis.reducer,
   },
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(api.middleware),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(api.middleware, authServiceApis.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

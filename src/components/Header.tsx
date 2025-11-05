@@ -6,50 +6,98 @@ import { useNavigate } from "react-router-dom";
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
-  const { data, isLoading, error } = useGetStudentDetailsQuery();
+  const { data, isLoading } = useGetStudentDetailsQuery();
   const { data: unreadData } = useGetUnreadCountQuery({});
   const notificationCount = unreadData?.data?.unreadCount || 0;
 
-  if (isLoading) return <div className="p-4 text-gray-600">Loading student info...</div>;
-  if (error) return <div className="p-4 text-red-500">Failed to load profile</div>;
-
   const student = data?.data;
+
   const handleNotificationClick = () => {
     navigate("/dashboard/notifications");
   };
 
-    const handleProfileClick = () => {
-      navigate("/dashboard/settings");
-    };
+  const handleProfileClick = () => {
+    navigate("/dashboard/settings");
+  };
+
+  // Avatar Component (shared logic)
+  const Avatar = () => {
+    if (isLoading) {
+      return <div className="w-12 h-12 rounded-full bg-gray-200 animate-pulse" />;
+    }
+
+    const profilePic = student?.profilePicture?.profilePicture || student?.avatar;
+    const initials =
+      `${student?.firstName?.[0] || ""}${student?.lastName?.[0] || ""}`.toUpperCase() || "U";
+
+    return (
+      <div
+        className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-white cursor-pointer hover:ring-blue-500 transition-all"
+        onClick={handleProfileClick}
+        title="View Profile"
+      >
+        {profilePic ? (
+          <>
+            <img
+              src={profilePic}
+              alt="Profile"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = "none";
+                const fallback = (e.target as HTMLImageElement).nextElementSibling;
+                if (fallback) fallback.classList.remove("hidden");
+              }}
+            />
+            <div className="hidden w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-lg">
+              {initials}
+            </div>
+          </>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-lg">
+            {initials}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
-      {/* Left: Profile Info */}
-      <div className="flex items-center space-x-3">
-        <img
-          src={student?.profilePicture?.profilePicture || student?.avatar || "/default-avatar.png"}
-          alt={student?.firstName || "Student"}
-          className="w-12 h-12 rounded-full object-cover border border-gray-300"
-        />
-        <div className="leading-tight">
-          <h1 className="text-lg font-semibold text-gray-800">
-            {student?.firstName} {student?.lastName}
-          </h1>
-          <p className="text-sm text-gray-500">
-            Hi, {student?.userName}! Ready to learn something new today?
-          </p>
-        </div>
-      </div>
+    <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        {/* Left: Profile Info */}
+        <div className="flex items-center space-x-4">
+          <Avatar />
 
-      {/* Right: Notifications */}
-      <div className="flex items-center space-x-4">
-        <NotificationBell count={notificationCount} onClick={handleNotificationClick} />
-        <button
-          className="hidden md:block text-sm text-gray-800 border border-gray-300 rounded-md px-3 py-1.5 hover:bg-gray-50 transition cursor-pointer"
-          onClick={handleProfileClick}
-        >
-          View Profile
-        </button>
+          {/* Greeting Text */}
+          <div className="hidden sm:block">
+            {isLoading ? (
+              <>
+                <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mb-1" />
+                <div className="h-4 w-48 bg-gray-100 rounded animate-pulse" />
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-gray-900">
+                  {student?.firstName} {student?.lastName}
+                </p>
+                <p className="text-xs text-gray-500">
+                  Hi, {student?.userName}! Ready to learn something new today?
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Notifications */}
+        <div className="flex items-center space-x-3">
+          <NotificationBell count={notificationCount} onClick={handleNotificationClick} />
+          <button
+            onClick={handleProfileClick}
+            className="hidden md:block text-sm font-medium text-blue-600 hover:text-blue-700 transition"
+          >
+            View Profile
+          </button>
+        </div>
       </div>
     </header>
   );

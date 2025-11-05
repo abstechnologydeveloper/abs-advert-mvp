@@ -3,10 +3,10 @@ import React, { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Header from "../components/Header";
-import { mockUser } from "../data/mockData";
 import { AuthStorage } from "../utils/authStorage";
 import { Bell } from "lucide-react";
 import { useGetUnreadCountQuery } from "../redux/notifications/notification-apis";
+import { useGetStudentDetailsQuery } from "../redux/user/user-apis";
 
 interface DashboardLayoutProps {
   onLogout: () => void;
@@ -14,12 +14,14 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
   const { data: unreadData } = useGetUnreadCountQuery({});
+  const { data: userData, isLoading: userLoading } = useGetStudentDetailsQuery();
   const notificationCount = unreadData?.data?.unreadCount || 0;
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const student = userData?.data;
 
   useEffect(() => {
     const storedUser = AuthStorage.getUser();
@@ -57,6 +59,33 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
     navigate("/dashboard/notifications");
   };
 
+  // Avatar Component (used in mobile)
+  const Avatar = () => {
+    if (userLoading) {
+      return <div className="w-8 h-8 rounded-full bg-gray-200 animate-pulse" />;
+    }
+
+    const profilePic = student?.profilePicture?.profilePicture || student?.avatar;
+    const initials =
+      `${student?.firstName?.[0] || ""}${student?.lastName?.[0] || ""}`.toUpperCase() || "U";
+
+    return profilePic ? (
+      <img
+        src={profilePic}
+        alt="Profile"
+        className="w-8 h-8 rounded-full object-cover ring-2 ring-white"
+        onError={(e) => {
+          (e.target as HTMLImageElement).style.display = "none";
+          (e.target as HTMLImageElement).nextElementSibling!.classList.remove("hidden");
+        }}
+      />
+    ) : (
+      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold ring-2 ring-white">
+        {initials}
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
       <Sidebar
@@ -73,7 +102,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
             {/* Menu Button */}
             <button
               onClick={() => setIsMobileOpen(true)}
-              className="text-gray-600 hover:text-gray-800"
+              className="text-gray-600 hover:text-gray-800 transition"
+              aria-label="Open menu"
             >
               {MenuIcon}
             </button>
@@ -81,10 +111,14 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
             {/* Right Side: Notification + Profile */}
             <div className="flex items-center space-x-4">
               {/* Notification Icon */}
-              <div className="relative cursor-pointer" onClick={handleNotificationClick}>
+              <div
+                className="relative cursor-pointer"
+                onClick={handleNotificationClick}
+                aria-label={`Notifications (${notificationCount} unread)`}
+              >
                 <Bell className="w-6 h-6 text-gray-700 hover:text-blue-600 transition" />
                 {notificationCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full px-1">
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {notificationCount}
                   </span>
                 )}
@@ -94,13 +128,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
               <div className="relative">
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 hover:bg-gray-50 rounded-lg p-2 transition"
+                  className="flex items-center space-x-1 hover:bg-gray-50 rounded-lg p-1 transition"
+                  aria-label="Profile menu"
                 >
-                  <img
-                    src={mockUser.avatar}
-                    alt={user?.email || "User"}
-                    className="w-8 h-8 rounded-full object-cover"
-                  />
+                  <Avatar />
                   <svg
                     className={`w-4 h-4 text-gray-500 transition-transform ${
                       isProfileOpen ? "rotate-180" : ""
@@ -120,13 +151,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
 
                 {/* Dropdown Menu */}
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[999]">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[999] animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* User Info */}
-                    <div className="px-4 py-3 border-b border-gray-200 break-words">
-                      <div className="text-sm font-medium text-gray-700 break-all">
-                        {user?.email || "User"}
+                    <div className="px-4 py-3 border-b border-gray-200">
+                      <div className="flex items-center space-x-3">
+                        <Avatar />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {student?.firstName} {student?.lastName}
+                          </p>
+                          <p className="text-xs text-gray-500 truncate">{user?.email || "User"}</p>
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">{user?.studentType || "ABS User"}</div>
                     </div>
 
                     {/* Settings */}
@@ -135,7 +171,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
                         setIsProfileOpen(false);
                         navigate("/dashboard/settings");
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2"
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center space-x-2 transition"
                     >
                       <svg
                         className="w-4 h-4"
@@ -169,7 +205,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
                         onLogout();
                         navigate("/login");
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2 transition"
                     >
                       <svg
                         className="w-4 h-4"
@@ -198,7 +234,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
           <Header />
         </div>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-50">
           <Outlet />
         </main>
       </div>

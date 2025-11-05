@@ -4,7 +4,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const authServiceApis = createApi({
   reducerPath: "authServiceApis",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://backend.dev.abstechconnect.com/api/v1/ads/auth",
+    baseUrl: import.meta.env.VITE_APP_BASE_URL,
     prepareHeaders: (headers) => {
       headers.set("Content-Type", "application/json; charset=utf-8");
       return headers;
@@ -14,13 +14,20 @@ export const authServiceApis = createApi({
   endpoints: (builder) => ({
     loginUser: builder.mutation({
       query: (credentials) => ({
-        url: "/login",
+        url: "/ads/auth/login",
         method: "POST",
         body: credentials,
       }),
       invalidatesTags: ["Auth"],
     }),
+    contactUs: builder.mutation({
+      query: (contactData) => ({
+        url: "/ads/auth/contact-us",
+        method: "POST",
+        body: contactData,
+      }),
+    }),
   }),
 });
 
-export const { useLoginUserMutation } = authServiceApis;
+export const { useLoginUserMutation, useContactUsMutation } = authServiceApis;

@@ -48,7 +48,7 @@ export const campaignServiceApi = api.injectEndpoints({
         console.log("getCampaignById called with ID:", id);
         return `/ads/campaigns/${id}`;
       },
-      providesTags: (result, error, id) => [{ type: "Campaigns", id }],
+      providesTags: (id) => [{ type: "Campaigns", id }],
       // Force refetch on every mount to ensure fresh data
       keepUnusedDataFor: 0,
     }),
@@ -79,7 +79,7 @@ export const campaignServiceApi = api.injectEndpoints({
           body: data,
         };
       },
-      invalidatesTags: (result, error, { id }) => ["Drafts", { type: "Campaigns", id }],
+      invalidatesTags: ({ id }) => ["Drafts", { type: "Campaigns", id }],
     }),
 
     getDrafts: builder.query({

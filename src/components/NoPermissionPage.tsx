@@ -1,7 +1,9 @@
 import React from "react";
 import { Lock, Shield, Mail } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const NoPermissionPage: React.FC<{ feature?: string }> = ({ feature }) => {
+  const navigate = useNavigate();
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center px-6 py-12">
       <div className="relative mb-6">
@@ -38,12 +40,12 @@ const NoPermissionPage: React.FC<{ feature?: string }> = ({ feature }) => {
       </div>
 
       <div className="space-y-3">
-        {/* <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105">
+        <button className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105">
           Upgrade Plan
-        </button> */}
+        </button>
 
         <button className="flex items-center justify-center space-x-2 px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">
-          <Mail className="w-4 h-4" />
+          <Mail className="w-4 h-4" onClick={() => navigate(`/contact-us`)} />
           <span>Contact Support</span>
         </button>
       </div>
