@@ -162,7 +162,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">ABS Ads</h1>
+              <h1 className="text-lg font-bold">AbS Ads</h1>
               <p className="text-xs text-gray-400">Marketing Platform</p>
             </div>
           </div>

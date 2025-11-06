@@ -365,7 +365,7 @@ const CreateCampaignPage: React.FC = () => {
         {!previewMode ? (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2">
             <div className="lg:col-span-4 xl:col-span-3">
-              <div className="lg:sticky lg:top-6">
+              <div className="lg:sticky lg:top-6 lg:self-start">
                 <CampaignSettings
                   formData={formData}
                   setFormData={setFormData}

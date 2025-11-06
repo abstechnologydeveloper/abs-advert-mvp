@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Upload,
   FileText,
@@ -10,9 +10,10 @@ import {
   ChevronDown,
   ChevronUp,
   AlertCircle,
-  Loader2,
   ExternalLink,
 } from "lucide-react";
+import { MultiSelectDropdown } from "../../../components/MultiSelectDropdown";
+
 
 interface CampaignSettingsProps {
   formData: any;
@@ -42,32 +43,6 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
     audience: true,
     attachments: false,
   });
-
-  const [showInstitutionDropdown, setShowInstitutionDropdown] = useState(false);
-  const [showDepartmentDropdown, setShowDepartmentDropdown] = useState(false);
-  const [showLevelDropdown, setShowLevelDropdown] = useState(false);
-
-  const institutionRef = useRef<HTMLDivElement>(null);
-  const departmentRef = useRef<HTMLDivElement>(null);
-  const levelRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (institutionRef.current && !institutionRef.current.contains(event.target as Node)) {
-        setShowInstitutionDropdown(false);
-      }
-      if (departmentRef.current && !departmentRef.current.contains(event.target as Node)) {
-        setShowDepartmentDropdown(false);
-      }
-      if (levelRef.current && !levelRef.current.contains(event.target as Node)) {
-        setShowLevelDropdown(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Merge departments and levels from selected institutions
   const { mergedDepartments, mergedLevels } = useMemo(() => {
@@ -138,47 +113,25 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
     }
   };
 
-  const toggleInstitution = (institutionId: string) => {
-    const current = formData.institutions || [];
-    const updated = current.includes(institutionId)
-      ? current.filter((id: string) => id !== institutionId)
-      : [...current, institutionId];
-
+  const handleInstitutionsChange = (selectedIds: string[]) => {
     setFormData({
       ...formData,
-      institutions: updated,
+      institutions: selectedIds,
       departments: [],
       levels: [],
     });
   };
 
-  const toggleDepartment = (department: string) => {
-    const current = formData.departments || [];
-    const updated = current.includes(department)
-      ? current.filter((d: string) => d !== department)
-      : [...current, department];
-
-    setFormData({ ...formData, departments: updated });
+  const handleDepartmentsChange = (selectedDepts: string[]) => {
+    setFormData({ ...formData, departments: selectedDepts });
   };
 
-  const toggleLevel = (level: string) => {
-    const current = formData.levels || [];
-    const updated = current.includes(level)
-      ? current.filter((l: string) => l !== level)
-      : [...current, level];
-
-    setFormData({ ...formData, levels: updated });
+  const handleLevelsChange = (selectedLevels: string[]) => {
+    setFormData({ ...formData, levels: selectedLevels });
   };
 
-  const getSelectedInstitutionNames = () => {
-    if (!formData.institutions || formData.institutions.length === 0) {
-      return "Select institutions";
-    }
-    if (formData.institutions.length === 1) {
-      const inst = institutions.find((i) => i.institutionId === formData.institutions[0]);
-      return inst?.name || "1 selected";
-    }
-    return `${formData.institutions.length} institutions selected`;
+  const getInstitutionName = (institutionId: string) => {
+    return institutions.find((i) => i.institutionId === institutionId)?.name || institutionId;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -192,6 +145,22 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
   };
 
   const totalAttachments = existingAttachments.length + attachments.length;
+
+  // Transform institutions for MultiSelectDropdown
+  const institutionOptions = institutions.map((inst) => ({
+    id: inst.institutionId,
+    label: inst.name,
+  }));
+
+  const departmentOptions = mergedDepartments.map((dept) => ({
+    id: dept,
+    label: dept,
+  }));
+
+  const levelOptions = mergedLevels.map((level) => ({
+    id: level,
+    label: level,
+  }));
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -295,145 +264,62 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
               {!formData.targetAll && (
                 <>
                   {/* Institutions Multi-Select */}
-                  <div ref={institutionRef} className="relative">
-                    <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
-                      <Building2 size={12} className="mr-1" />
-                      Institutions{" "}
-                      {isLoadingInstitutions && <Loader2 size={12} className="ml-2 animate-spin" />}
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowInstitutionDropdown(!showInstitutionDropdown)}
-                      className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
-                      disabled={isLoadingInstitutions}
-                    >
-                      <span className="truncate">{getSelectedInstitutionNames()}</span>
-                      <ChevronDown size={16} className="flex-shrink-0 ml-2" />
-                    </button>
-
-                    {showInstitutionDropdown && (
-                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        {institutions.length === 0 ? (
-                          <div className="px-3 py-2 text-xs text-gray-500">
-                            No institutions found
-                          </div>
-                        ) : (
-                          institutions.map((institution) => (
-                            <label
-                              key={institution.institutionId}
-                              className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={formData.institutions?.includes(institution.institutionId)}
-                                onChange={() => toggleInstitution(institution.institutionId)}
-                                className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
-                              <span className="text-xs text-gray-900">{institution.name}</span>
-                            </label>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
+                  <MultiSelectDropdown
+                    label="Institutions"
+                    icon={<Building2 size={12} />}
+                    options={institutionOptions}
+                    selectedValues={formData.institutions || []}
+                    onChange={handleInstitutionsChange}
+                    placeholder="Select institutions..."
+                    searchPlaceholder="Search institutions..."
+                    tagColor="blue"
+                    isLoading={isLoadingInstitutions}
+                    getDisplayName={getInstitutionName}
+                  />
 
                   {/* Departments Multi-Select */}
                   {formData.institutions &&
                     formData.institutions.length > 0 &&
                     mergedDepartments.length > 0 && (
-                      <div ref={departmentRef} className="relative">
-                        <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
-                          <Users size={12} className="mr-1" />
-                          Departments
-                          {formData.institutions.length > 1 && (
-                            <span className="ml-2 text-xs text-blue-600">
-                              (from {formData.institutions.length} institutions)
-                            </span>
-                          )}
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowDepartmentDropdown(!showDepartmentDropdown)}
-                          className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className="truncate">
-                            {formData.departments?.length > 0
-                              ? `${formData.departments.length} department(s) selected`
-                              : "Select departments"}
-                          </span>
-                          <ChevronDown size={16} className="flex-shrink-0 ml-2" />
-                        </button>
-
-                        {showDepartmentDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {mergedDepartments.map((dept) => (
-                              <label
-                                key={dept}
-                                className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={formData.departments?.includes(dept)}
-                                  onChange={() => toggleDepartment(dept)}
-                                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="text-xs text-gray-900">{dept}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <MultiSelectDropdown
+                        label="Departments"
+                        icon={<Users size={12} />}
+                        options={departmentOptions}
+                        selectedValues={formData.departments || []}
+                        onChange={handleDepartmentsChange}
+                        placeholder="Select departments..."
+                        searchPlaceholder="Search departments..."
+                        tagColor="green"
+                        helperText={
+                          formData.institutions.length > 1
+                            ? `from ${formData.institutions.length} institutions`
+                            : undefined
+                        }
+                      />
                     )}
 
                   {/* Levels Multi-Select */}
                   {formData.institutions &&
                     formData.institutions.length > 0 &&
                     mergedLevels.length > 0 && (
-                      <div ref={levelRef} className="relative">
-                        <label className="block text-xs font-medium text-gray-700 mb-1 flex items-center">
-                          <GraduationCap size={12} className="mr-1" />
-                          Student Levels
-                          {formData.institutions.length > 1 && (
-                            <span className="ml-2 text-xs text-blue-600">
-                              (from {formData.institutions.length} institutions)
-                            </span>
-                          )}
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowLevelDropdown(!showLevelDropdown)}
-                          className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className="truncate">
-                            {formData.levels?.length > 0
-                              ? `${formData.levels.length} level(s) selected`
-                              : "Select levels"}
-                          </span>
-                          <ChevronDown size={16} className="flex-shrink-0 ml-2" />
-                        </button>
-
-                        {showLevelDropdown && (
-                          <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {mergedLevels.map((level) => (
-                              <label
-                                key={level}
-                                className="flex items-center px-3 py-2 hover:bg-blue-50 cursor-pointer"
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={formData.levels?.includes(level)}
-                                  onChange={() => toggleLevel(level)}
-                                  className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <span className="text-xs text-gray-900">{level}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
+                      <MultiSelectDropdown
+                        label="Student Levels"
+                        icon={<GraduationCap size={12} />}
+                        options={levelOptions}
+                        selectedValues={formData.levels || []}
+                        onChange={handleLevelsChange}
+                        placeholder="Select levels..."
+                        searchPlaceholder="Search levels..."
+                        tagColor="purple"
+                        helperText={
+                          formData.institutions.length > 1
+                            ? `from ${formData.institutions.length} institutions`
+                            : undefined
+                        }
+                      />
                     )}
 
-                  {/* Info message when institutions selected */}
+                  {/* Info message */}
                   {formData.institutions && formData.institutions.length > 0 && (
                     <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg flex items-start space-x-2">
                       <AlertCircle size={14} className="text-blue-600 flex-shrink-0 mt-0.5" />
@@ -501,7 +387,6 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 <span>Upload files</span>
               </button>
 
-              {/* Existing Attachments (from draft/campaign) */}
               {existingAttachments.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-gray-700">Existing Files:</p>
@@ -547,7 +432,6 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 </div>
               )}
 
-              {/* New Attachments (not yet uploaded) */}
               {attachments.length > 0 && (
                 <div className="space-y-2">
                   {existingAttachments.length > 0 && (

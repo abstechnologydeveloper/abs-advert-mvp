@@ -16,10 +16,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
   const { data: unreadData } = useGetUnreadCountQuery({});
   const { data: userData, isLoading: userLoading } = useGetStudentDetailsQuery();
   const notificationCount = unreadData?.data?.unreadCount || 0;
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
+
   const navigate = useNavigate();
   const student = userData?.data;
 
@@ -96,8 +98,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+        {/* ✅ Mobile Header (hidden on lg and above) */}
+        <header className="block lg:hidden bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
             {/* Menu Button */}
             <button
@@ -149,7 +151,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
                   </svg>
                 </button>
 
-                {/* Dropdown Menu */}
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[999] animate-in fade-in slide-in-from-top-2 duration-200">
                     {/* User Info */}
@@ -227,12 +228,12 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
               </div>
             </div>
           </div>
-        </div>
+        </header>
 
-        {/* Desktop Header */}
-        <div className="hidden md:block">
+        {/* ✅ Desktop Header (only visible on lg and above) */}
+        <header className="hidden lg:block">
           <Header />
-        </div>
+        </header>
 
         <main className="flex-1 overflow-y-auto bg-gray-50">
           <Outlet />
