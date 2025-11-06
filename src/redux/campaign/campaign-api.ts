@@ -8,7 +8,7 @@ export const campaignServiceApi = api.injectEndpoints({
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Drafts", "History", "Notifications"],
+      invalidatesTags: ["Campaigns", "Stats", "Drafts", "History", "Pending", "Notifications"],
     }),
 
     resendCampaign: builder.mutation({
@@ -16,7 +16,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/resend`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "History", "Stats", "Notifications"],
+      invalidatesTags: ["Campaigns", "History", "Stats", "Pending", "Notifications"],
     }),
 
     approveCampaign: builder.mutation({
@@ -24,7 +24,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/approve`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Notifications"],
+      invalidatesTags: ["Campaigns", "Stats", "Pending", "Notifications"],
     }),
 
     cancelCampaign: builder.mutation({
@@ -32,7 +32,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/cancel`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Notifications"],
+      invalidatesTags: ["Campaigns", "Stats", "Pending", "Drafts", "Notifications"],
     }),
 
     deleteCampaign: builder.mutation({
@@ -40,7 +40,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Campaigns", "Drafts", "History", "Stats", "Notifications"],
+      invalidatesTags: ["Campaigns", "Drafts", "History", "Stats", "Pending", "Notifications"],
     }),
 
     getCampaignById: builder.query({
@@ -53,7 +53,6 @@ export const campaignServiceApi = api.injectEndpoints({
         console.log(result);
         return [{ type: "Campaigns", id }];
       },
-
       keepUnusedDataFor: 0,
     }),
 
@@ -90,6 +89,15 @@ export const campaignServiceApi = api.injectEndpoints({
       query: ({ page = 1, limit = 10, search = "" }) =>
         `/ads/campaigns/drafts?page=${page}&limit=${limit}&search=${search}`,
       providesTags: ["Drafts"],
+    }),
+
+    // ==========================
+    // ⏳ PENDING CAMPAIGNS (IN REVIEW)
+    // ==========================
+    getPendingCampaigns: builder.query({
+      query: ({ page = 1, limit = 10, search = "" }) =>
+        `/ads/campaigns/pending?page=${page}&limit=${limit}&search=${search}`,
+      providesTags: ["Pending"],
     }),
 
     // ==========================
@@ -130,6 +138,7 @@ export const {
   useSaveDraftMutation,
   useUpdateDraftMutation,
   useGetDraftsQuery,
+  useGetPendingCampaignsQuery, // NEW!
   useGetHistoryQuery,
   useGetSchoolsQuery,
   useUploadAttachmentsMutation,

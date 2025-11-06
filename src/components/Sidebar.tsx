@@ -35,7 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
   const navigationSections = [
     {
       id: "main",
-      title: "Main",
+      title: "",
       items: [
         {
           path: "overview",
@@ -55,6 +55,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
           icon: Mail,
           items: [
             { path: "create-campaign", label: "Create New" },
+            { path: "pending", label: "In Review" },
             { path: "drafts", label: "Drafts" },
             { path: "history", label: "History" },
           ],
@@ -82,28 +83,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
       ],
     },
     {
-      id: "resources",
-      title: "Resources",
+      id: "educational-ads",
+      title: "Educational Advertising",
       collapsible: true,
       sections: [
         {
           key: "scholarship",
-          label: "Scholarships",
+          label: "Scholarship Ads",
           icon: GraduationCap,
           items: [
-            { path: "web-scholarship-ads", label: "Web Ads" },
-            { path: "mobile-scholarship-ads", label: "Mobile Ads" },
+            { path: "web-scholarship-ads", label: "Web Platform" },
+            { path: "mobile-scholarship-ads", label: "Mobile App" },
             { path: "scholarship-ads-drafts", label: "Drafts" },
             { path: "scholarship-ads-history", label: "History" },
           ],
         },
         {
           key: "library",
-          label: "Library Ads",
+          label: "Library Resource Ads",
           icon: BookOpen,
           items: [
-            { path: "web-library-ads", label: "Web Ads" },
-            { path: "mobile-library-ads", label: "Mobile Ads" },
+            { path: "web-library-ads", label: "Web Platform" },
+            { path: "mobile-library-ads", label: "Mobile App" },
             { path: "library-ads-drafts", label: "Drafts" },
             { path: "library-ads-history", label: "History" },
           ],
@@ -161,7 +162,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
               <Mail className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-lg font-bold">AbS Ads</h1>
+              <h1 className="text-lg font-bold">ABS Ads</h1>
               <p className="text-xs text-gray-400">Marketing Platform</p>
             </div>
           </div>
@@ -179,9 +180,11 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
             {navigationSections.map((section) => (
               <div key={section.id}>
                 {/* Section Title */}
-                <div className="text-gray-400 text-xs uppercase tracking-wider px-3 mb-2 font-semibold">
-                  {section.title}
-                </div>
+                {section.title && (
+                  <div className="text-gray-400 text-xs uppercase tracking-wider px-3 mb-2 font-semibold">
+                    {section.title}
+                  </div>
+                )}
 
                 {/* Direct Items */}
                 {section.items && (
