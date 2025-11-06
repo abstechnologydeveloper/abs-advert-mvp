@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import { CheckCircle, Mail, AlertCircle } from "lucide-react";
 
 export default function UnsubscribePage() {
