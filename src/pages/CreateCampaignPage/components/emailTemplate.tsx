@@ -101,7 +101,7 @@ export const wrapEmailTemplate = (content: string, subject: string): string => {
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="border-top: 1px solid #e5e7eb; padding-top: 12px;">
                                 <tr>
                                     <td align="center">
-                                        <a href="https://admin.abstechconnect.com/unsubscribe" class="footer-link" style="color: #9ca3af; text-decoration: underline; font-size: 11px;">
+                                        <a href="https://ads.abstechconnect.com/unsubscribe" class="footer-link" style="color: #9ca3af; text-decoration: underline; font-size: 11px;">
                                             Unsubscribe from these emails
                                         </a>
                                     </td>
