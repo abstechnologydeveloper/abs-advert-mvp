@@ -514,7 +514,7 @@ This opportunity is brought to you by [Partner Company] in collaboration with Ab
           </p>
           <button
             className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
-            onClick={() => navigate(`/contact-us`)}
+            onClick={() => navigate(`/dashboard/contact-us`)}
           >
             Contact AbS Support
           </button>

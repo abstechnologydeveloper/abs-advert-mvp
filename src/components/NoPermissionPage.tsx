@@ -45,7 +45,7 @@ const NoPermissionPage: React.FC<{ feature?: string }> = ({ feature }) => {
         </button>
 
         <button className="flex items-center justify-center space-x-2 px-8 py-3 bg-white border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200">
-          <Mail className="w-4 h-4" onClick={() => navigate(`/contact-us`)} />
+          <Mail className="w-4 h-4" onClick={() => navigate(`/dashboard/contact-us`)} />
           <span>Contact Support</span>
         </button>
       </div>
