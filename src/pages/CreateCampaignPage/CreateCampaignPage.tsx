@@ -92,16 +92,12 @@ const CreateCampaignPage: React.FC = () => {
     },
   });
 
-  // API Hooks
   const [createCampaign, { isLoading: isSending }] = useCreateEmailCampaignMutation();
   const [saveDraft, { isLoading: isSavingDraft }] = useSaveDraftMutation();
   const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
   const { data: institutionsData, isLoading: isLoadingInstitutions } = useGetSchoolsQuery({});
   const [uploadAttachments, { isLoading: isUploadingImage }] = useUploadAttachmentsMutation();
-
   const institutions = institutionsData?.data || [];
-
-  // Use custom hook for form management
   const {
     draftId,
     mode,
