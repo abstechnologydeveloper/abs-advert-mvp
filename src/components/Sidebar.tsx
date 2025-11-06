@@ -100,6 +100,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           items: [
             { path: "create-campaign", label: "Create New" },
             { path: "pending", label: "In Review" },
+            { path: "scheduled", label: "Scheduled" },
             { path: "drafts", label: "Drafts" },
             { path: "history", label: "History" },
           ],
