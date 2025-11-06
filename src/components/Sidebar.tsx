@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   Save,
   Loader2,
+  CreditCard,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -168,9 +169,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
-      id: "other",
+      id: "account",
       title: "Support",
       items: [
+        {
+          path: "billing",
+          label: "Billing & Payments",
+          icon: CreditCard,
+        },
         {
           path: "settings",
           label: "Settings",

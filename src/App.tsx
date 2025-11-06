@@ -15,6 +15,8 @@ import NotificationPage from "./pages/Notifications/NotificationPage";
 import CampaignDetailsPage from "./pages/CampaignDetailPage/CampaignDetailPage";
 import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuidelinesPage";
 import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCampaignsPage";
+import BillingPage from "./pages/BillingPage/BillingPage";
+import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -76,7 +78,8 @@ const App: React.FC = () => {
           <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
           <Route path="edit-failed/:id" element={<CreateCampaignPage />} />
           <Route path="campaign-guidelines" element={<CampaignGuidelinesPage />} />
-
+          {/* Quills Ads */}
+          <Route path="billing" element={<BillingPage />} />
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
 
@@ -146,7 +149,7 @@ const App: React.FC = () => {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="overview" replace />} />
         </Route>
-
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
         {/* Redirect root */}
         <Route
           path="/"
