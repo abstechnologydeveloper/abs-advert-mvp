@@ -15,6 +15,7 @@ export const api = createApi({
     "Stats",
     "Schools",
     "Pending",
+    "Scheduled",
   ],
   endpoints: () => ({}),
 });

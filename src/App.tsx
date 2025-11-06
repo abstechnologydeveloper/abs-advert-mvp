@@ -14,6 +14,7 @@ import SettingsPage from "./pages/SettingsPage";
 import NotificationPage from "./pages/Notifications/NotificationPage";
 import CampaignDetailsPage from "./pages/CampaignDetailPage/CampaignDetailPage";
 import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuidelinesPage";
+import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCampaignsPage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -66,6 +67,7 @@ const App: React.FC = () => {
           <Route path="overview" element={<OverviewPage />} />
           <Route path="create-campaign" element={<CreateCampaignPage />} />
           <Route path="pending" element={<PendingCampaignsPage />} />
+          <Route path="scheduled" element={<ScheduledCampaignsPage />} />
           <Route path="drafts" element={<DraftsPage />} />
           <Route path="history" element={<HistoryPage />} />
 
@@ -74,6 +76,7 @@ const App: React.FC = () => {
           <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
           <Route path="edit-failed/:id" element={<CreateCampaignPage />} />
           <Route path="campaign-guidelines" element={<CampaignGuidelinesPage />} />
+
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
 

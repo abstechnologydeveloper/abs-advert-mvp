@@ -8,7 +8,15 @@ export const campaignServiceApi = api.injectEndpoints({
         method: "POST",
         body: formData,
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Drafts", "History", "Pending", "Notifications"],
+      invalidatesTags: [
+        "Campaigns",
+        "Stats",
+        "Drafts",
+        "History",
+        "Pending",
+        "Scheduled",
+        "Notifications",
+      ],
     }),
 
     resendCampaign: builder.mutation({
@@ -16,7 +24,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/resend`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "History", "Stats", "Pending", "Notifications"],
+      invalidatesTags: ["Campaigns", "History", "Stats", "Pending", "Scheduled", "Notifications"],
     }),
 
     approveCampaign: builder.mutation({
@@ -24,7 +32,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/approve`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Pending", "Notifications"],
+      invalidatesTags: ["Campaigns", "Stats", "Pending", "Scheduled", "Notifications"],
     }),
 
     cancelCampaign: builder.mutation({
@@ -32,7 +40,7 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}/cancel`,
         method: "POST",
       }),
-      invalidatesTags: ["Campaigns", "Stats", "Pending", "Drafts", "Notifications"],
+      invalidatesTags: ["Campaigns", "Stats", "Pending", "Drafts", "Scheduled", "Notifications"],
     }),
 
     deleteCampaign: builder.mutation({
@@ -40,7 +48,15 @@ export const campaignServiceApi = api.injectEndpoints({
         url: `/ads/campaigns/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: ["Campaigns", "Drafts", "History", "Stats", "Pending", "Notifications"],
+      invalidatesTags: [
+        "Campaigns",
+        "Drafts",
+        "History",
+        "Stats",
+        "Pending",
+        "Scheduled",
+        "Notifications",
+      ],
     }),
 
     getCampaignById: builder.query({
@@ -101,6 +117,15 @@ export const campaignServiceApi = api.injectEndpoints({
     }),
 
     // ==========================
+    // 🕐 SCHEDULED CAMPAIGNS
+    // ==========================
+    getScheduledCampaigns: builder.query({
+      query: ({ page = 1, limit = 10, search = "" }) =>
+        `/ads/campaigns/scheduled?page=${page}&limit=${limit}&search=${search}`,
+      providesTags: ["Scheduled"],
+    }),
+
+    // ==========================
     // 📜 HISTORY
     // ==========================
     getHistory: builder.query({
@@ -138,7 +163,8 @@ export const {
   useSaveDraftMutation,
   useUpdateDraftMutation,
   useGetDraftsQuery,
-  useGetPendingCampaignsQuery, // NEW!
+  useGetPendingCampaignsQuery,
+  useGetScheduledCampaignsQuery, // NEW!
   useGetHistoryQuery,
   useGetSchoolsQuery,
   useUploadAttachmentsMutation,
