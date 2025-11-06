@@ -11,10 +11,11 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const CampaignGuidelinesPage = () => {
   const [expandedSection, setExpandedSection] = useState<string | null>("voice-tone");
-
+  const navigate = useNavigate();
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
   };
@@ -511,7 +512,10 @@ This opportunity is brought to you by [Partner Company] in collaboration with Ab
             Our team is here to help you create campaigns that resonate with students while
             maintaining the trust they have in AbS.
           </p>
-          <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition">
+          <button
+            className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-50 transition"
+            onClick={() => navigate(`/contact-us`)}
+          >
             Contact AbS Support
           </button>
         </div>
