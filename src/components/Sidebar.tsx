@@ -156,6 +156,17 @@ const Sidebar: React.FC<SidebarProps> = ({
       ],
     },
     {
+      id: "resources",
+      title: "Resources",
+      items: [
+        {
+          path: "campaign-guidelines",
+          label: "Campaign Guidelines",
+          icon: BookOpen,
+        },
+      ],
+    },
+    {
       id: "other",
       title: "Support",
       items: [
