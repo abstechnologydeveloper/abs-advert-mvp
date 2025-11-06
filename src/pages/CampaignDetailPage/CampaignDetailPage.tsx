@@ -1,5 +1,5 @@
 // pages/CampaignDetailsPage/CampaignDetailsPage.tsx
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -14,6 +14,9 @@ import {
   Layers,
   Loader2,
   AlertCircle,
+  Eye,
+  EyeOff,
+  Edit,
 } from "lucide-react";
 import { useGetCampaignByIdQuery } from "../../redux/campaign/campaign-api";
 import { CampaignStatus } from "../../types/models";
@@ -21,6 +24,7 @@ import { CampaignStatus } from "../../types/models";
 const CampaignDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [showPreview, setShowPreview] = useState(false);
 
   const { data, isLoading, error } = useGetCampaignByIdQuery(id!, {
     skip: !id,
@@ -118,7 +122,19 @@ const CampaignDetailsPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">{campaign.name}</h1>
               <p className="text-gray-600">{campaign.subject}</p>
             </div>
-            {getStatusBadge(campaign.status)}
+            <div className="flex items-center gap-3">
+              {getStatusBadge(campaign.status)}
+              {campaign.status === "FAILED" ||
+                (campaign.status === "DRAFT" && (
+                  <button
+                    onClick={() => navigate(`/dashboard/edit-failed/${campaign.id}`)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    <Edit size={18} />
+                    Edit & Resubmit
+                  </button>
+                ))}
+            </div>
           </div>
         </div>
 
@@ -277,14 +293,42 @@ const CampaignDetailsPage: React.FC = () => {
             </div>
           </div>
         </div>
-        {/* {html(campaign)} */}
+
+        {/* Email Preview Section */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-6 py-4 border-b border-gray-200">
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Email Content Preview</h2>
+                <p className="text-sm text-gray-600">
+                  {showPreview ? "Click to hide" : "Click to view the email content"}
+                </p>
+              </div>
+              {showPreview ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+
+          {showPreview && (
+            <div className="p-6 bg-gray-50">
+              <div className="bg-white rounded-lg border border-gray-300 p-4 max-h-[600px] overflow-y-auto">
+                {/* Isolated iframe for safe HTML rendering */}
+                <iframe
+                  srcDoc={campaign.content}
+                  title="Email Preview"
+                  className="w-full min-h-[500px] border-0"
+                  sandbox="allow-same-origin"
+                  style={{ colorScheme: "normal" }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 };
 
 export default CampaignDetailsPage;
-
-// const html = (campaign: Campaign) => (
-//   <div className="proe max-w-none" dangerouslySetInnerHTML={{ __html: campaign.content }} />
-// );

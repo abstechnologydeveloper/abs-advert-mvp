@@ -2,11 +2,13 @@
 import React, { useState, useRef, useEffect, ChangeEvent } from "react";
 import "../../prose-mirror.css";
 import { useEditor, EditorContent } from "@tiptap/react";
+import { useNavigate } from "react-router-dom";
 import { editorExtensions } from "./components/editorConfig";
 import { Toolbar } from "./components/Toolbar";
 import { CampaignSettings } from "./components/CampaignSettings";
 import { SlashMenu } from "./components/SlashMenu";
 import { EditorBubbleMenu } from "./components/EditorBubbleMenu";
+import { EmailPreview } from "./components/EmailPreview";
 import {
   Eye,
   Send,
@@ -18,53 +20,29 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
-import { wrapEmailTemplate } from "./components/emailTemplate";
-import { EmailPreview } from "./components/EmailPreview";
 import {
   useCreateEmailCampaignMutation,
   useGetSchoolsQuery,
   useSaveDraftMutation,
   useUpdateDraftMutation,
   useUploadAttachmentsMutation,
-  useGetCampaignByIdQuery,
 } from "../../redux/campaign/campaign-api";
-import { useSearchParams, useNavigate, useParams } from "react-router-dom";
-
+import { getMaxEndDate, useCampaignForm } from "./hooks/useCampaignForm";
+import { handleSchedule, handleSaveDraft, handleSubmit } from "./utils/campaignHandlers";
+import { Toast, MINIMUM_SCHEDULE_HOURS } from "./types/campaign.types";
 
 const CreateCampaignPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const params = useParams();
   const navigate = useNavigate();
 
-  const draftId = params.id || searchParams.get("draftId");
-  const mode = searchParams.get("mode") || (params.id ? "draft" : null);
-
-  const [formData, setFormData] = useState({
-    name: "",
-    subject: "",
-    targetAll: false,
-    institutions: [] as string[],
-    departments: [] as string[],
-    levels: [] as string[],
-    sendNow: true,
-    sendAt: null as string | null,
-    recurring: false,
-    timeSlots: [] as string[],
-    campaignType: "EMAIL",
-    fromName: "AbS",
-    fromEmail: "hello@abstechconnect.com",
-  });
-
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const [existingAttachments, setExistingAttachments] = useState<any[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
   const [showSlashMenu, setShowSlashMenu] = useState(false);
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [slashMenuPosition, setSlashMenuPosition] = useState({ top: 0, left: 0 });
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-  const [draftLoaded, setDraftLoaded] = useState(false);
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("");
+  const [toast, setToast] = useState<Toast | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -114,36 +92,6 @@ const CreateCampaignPage: React.FC = () => {
     },
   });
 
-  useEffect(() => {
-    setDraftLoaded(false);
-    if (!draftId) {
-      resetForm();
-    }
-  }, [draftId, editor]);
-
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      subject: "",
-      targetAll: false,
-      institutions: [],
-      departments: [],
-      levels: [],
-      sendNow: true,
-      sendAt: null,
-      recurring: false,
-      timeSlots: [],
-      campaignType: "EMAIL",
-      fromName: "AbS",
-      fromEmail: "hello@abstechconnect.com",
-    });
-    setExistingAttachments([]);
-    setAttachments([]);
-    setScheduleDate("");
-    setScheduleTime("");
-    editor?.commands.setContent("<p></p>");
-  };
-
   // API Hooks
   const [createCampaign, { isLoading: isSending }] = useCreateEmailCampaignMutation();
   const [saveDraft, { isLoading: isSavingDraft }] = useSaveDraftMutation();
@@ -151,57 +99,23 @@ const CreateCampaignPage: React.FC = () => {
   const { data: institutionsData, isLoading: isLoadingInstitutions } = useGetSchoolsQuery({});
   const [uploadAttachments, { isLoading: isUploadingImage }] = useUploadAttachmentsMutation();
 
-  const shouldFetchDraft = Boolean(draftId);
-  const {
-    data: campaignData,
-    isLoading: isLoadingCampaign,
-    refetch: refetchCampaign,
-  } = useGetCampaignByIdQuery(draftId!, { skip: !shouldFetchDraft });
-
   const institutions = institutionsData?.data || [];
 
-  // Load draft — preserve schedule
-  useEffect(() => {
-    if (campaignData?.data && draftId && editor && !draftLoaded) {
-      const campaign = campaignData.data;
-      let rawContent = campaign.content || "<p></p>";
-
-      const bodyMatch = rawContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-      if (bodyMatch) rawContent = bodyMatch[1];
-
-      const footerRegex = /<div[^>]*class=["']bg-gray-900[^>]*>[\s\S]*?<\/div>\s*<\/div>/gi;
-      rawContent = rawContent.replace(footerRegex, "").trim();
-      console.log(campaign.sendAt);
-      console.log(campaign.timeSlots);
-      console.log(campaign.recurring);
-      setFormData({
-        name: campaign.name || "",
-        subject: campaign.subject || "",
-        targetAll: campaign.targetAll || false,
-        institutions: Array.isArray(campaign.institutions) ? campaign.institutions : [],
-        departments: Array.isArray(campaign.departments) ? campaign.departments : [],
-        levels: Array.isArray(campaign.levels) ? campaign.levels : [],
-        sendNow: !campaign.sendAt,
-        sendAt: campaign.sendAt || null,
-        recurring: campaign.recurring || false,
-        timeSlots: Array.isArray(campaign.timeSlots) ? campaign.timeSlots : [],
-        campaignType: campaign.campaignType || "EMAIL",
-        fromName: "AbS",
-        fromEmail: "hello@abstechconnect.com",
-      });
-
-      editor.commands.setContent(rawContent || "<p></p>");
-
-      if (campaign.attachments) {
-        const attachmentsArray = Array.isArray(campaign.attachments)
-          ? campaign.attachments
-          : [campaign.attachments].filter(Boolean);
-        setExistingAttachments(attachmentsArray);
-      }
-
-      setDraftLoaded(true);
-    }
-  }, [campaignData, draftId, editor, draftLoaded]);
+  // Use custom hook for form management
+  const {
+    draftId,
+    mode,
+    formData,
+    setFormData,
+    attachments,
+    setAttachments,
+    existingAttachments,
+    setExistingAttachments,
+    isLoadingCampaign,
+    refetchCampaign,
+    resetForm,
+    setDraftLoaded,
+  } = useCampaignForm(editor, institutions);
 
   // Sync schedule modal
   useEffect(() => {
@@ -213,7 +127,16 @@ const CreateCampaignPage: React.FC = () => {
       setScheduleDate("");
       setScheduleTime("");
     }
-  }, [formData.sendAt]);
+
+    if (formData.endAt) {
+      const dt = new Date(formData.endAt);
+      setEndDate(dt.toISOString().split("T")[0]);
+      setEndTime(dt.toISOString().split("T")[1].slice(0, 5));
+    } else {
+      setEndDate("");
+      setEndTime("");
+    }
+  }, [formData.sendAt, formData.endAt]);
 
   // Toast auto-dismiss
   useEffect(() => {
@@ -251,35 +174,94 @@ const CreateCampaignPage: React.FC = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showScheduleModal]);
 
-  // Schedule
-  const handleSchedule = () => {
-    if (!scheduleDate || !scheduleTime) {
-      setToast({ message: "Please select both date and time", type: "error" });
-      return;
-    }
-    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
-    if (scheduledDateTime <= new Date()) {
-      setToast({ message: "Scheduled time must be in the future", type: "error" });
-      return;
-    }
-
-    setFormData({
-      ...formData,
-      sendNow: false,
-      sendAt: scheduledDateTime.toISOString(),
+  const handleScheduleClick = () => {
+    handleSchedule({
+      scheduleDate,
+      scheduleTime,
+      endDate,
+      endTime,
+      formData,
+      setFormData,
+      setShowScheduleModal,
+      setToast,
     });
-
-    setShowScheduleModal(false);
   };
 
-  // Clear Schedule
   const handleClearSchedule = () => {
-    setFormData({ ...formData, sendNow: true, sendAt: null });
+    setFormData({ ...formData, sendNow: true, sendAt: null, endAt: null });
     setScheduleDate("");
     setScheduleTime("");
+    setEndDate("");
+    setEndTime("");
   };
 
-  // File Change: Replace same-name files
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editor) return;
+
+    try {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: dataUrl,
+            alt: "Uploading...",
+          })
+          .run();
+      };
+      reader.readAsDataURL(file);
+
+      const formData = new FormData();
+      formData.append("attachments", file);
+      const response = await uploadAttachments(formData).unwrap();
+
+      const imageUrl = response.data[0]?.url;
+      if (!imageUrl) throw new Error("Upload failed - no URL returned");
+
+      const { state } = editor;
+      let imagePos: number | null = null;
+
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.src.startsWith("data:")) {
+          imagePos = pos;
+          return false;
+        }
+      });
+
+      if (imagePos !== null) {
+        const { tr } = state;
+        tr.setNodeMarkup(imagePos, undefined, {
+          src: imageUrl,
+          alt: file.name,
+        });
+        editor.view.dispatch(tr);
+      } else {
+        editor
+          .chain()
+          .focus()
+          .setImage({
+            src: imageUrl,
+            alt: file.name,
+          })
+          .run();
+      }
+
+      setToast({ message: "Image uploaded successfully!", type: "success" });
+    } catch (error: any) {
+      console.error("Image upload error:", error);
+      setToast({
+        message: error?.data?.message || "Image upload failed",
+        type: "error",
+      });
+      editor.commands.undo();
+    }
+
+    e.target.value = "";
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files || []);
     const updatedAttachments = [...attachments];
@@ -302,136 +284,35 @@ const CreateCampaignPage: React.FC = () => {
     setExistingAttachments(updatedExisting);
   };
 
-  // Save Draft
-  const handleSaveDraft = async () => {
-    if (!formData.name.trim()) {
-      setToast({ message: "Please enter a campaign name before saving", type: "error" });
-      return;
-    }
-    try {
-      const rawContent = editor?.getHTML() || "";
-
-      const draftFormData = new FormData();
-      draftFormData.append("name", formData.name);
-      draftFormData.append("subject", formData.subject);
-      draftFormData.append("content", rawContent);
-      draftFormData.append("targetAll", String(formData.targetAll));
-      draftFormData.append("campaignType", formData.campaignType);
-      draftFormData.append("sendNow", String(formData.sendNow));
-      if (formData.sendAt) draftFormData.append("sendAt", formData.sendAt);
-      draftFormData.append("recurring", String(formData.recurring));
-      formData.timeSlots.forEach((slot) => draftFormData.append("timeSlots[]", slot));
-
-      if (!formData.targetAll) {
-        campaignData.append("institutions", JSON.stringify(formData.institutions));
-        campaignData.append("departments", JSON.stringify(formData.departments));
-        campaignData.append("levels", JSON.stringify(formData.levels));
-      }
-
-      attachments.forEach((file) => {
-        draftFormData.append("attachments", file);
-      });
-      if (draftId && mode === "draft") {
-        await updateDraft({ id: draftId, data: draftFormData }).unwrap();
-        await refetchCampaign();
-        setDraftLoaded(false);
-        setToast({ message: "Draft updated successfully!", type: "success" });
-      } else {
-        await saveDraft(draftFormData).unwrap();
-        setToast({ message: "Draft saved successfully!", type: "success" });
-        setTimeout(() => navigate("/dashboard/drafts"), 1500);
-      }
-    } catch (error: any) {
-      setToast({
-        message: error?.data?.message || "Failed to save draft. Please try again.",
-        type: "error",
-      });
-    }
+  const onSaveDraft = () => {
+    handleSaveDraft({
+      formData,
+      editor,
+      attachments,
+      institutions,
+      draftId,
+      mode,
+      saveDraft,
+      updateDraft,
+      refetchCampaign,
+      setDraftLoaded,
+      setToast,
+      navigate,
+    });
   };
 
-  // Send
-  // Fixed handleSubmit function for CreateCampaignPage.tsx
-
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-
-    if (!formData.name.trim()) {
-      setToast({ message: "Please enter a campaign name", type: "error" });
-      return;
-    }
-    if (!formData.subject.trim()) {
-      setToast({ message: "Please enter a subject line", type: "error" });
-      return;
-    }
-    if (!formData.targetAll && (!formData.institutions || formData.institutions.length === 0)) {
-      setToast({
-        message: "Please select at least one institution or enable 'Target All'",
-        type: "error",
-      });
-      return;
-    }
-    const rawContent = editor?.getHTML() || "";
-    if (!rawContent || rawContent === "<p></p>") {
-      setToast({ message: "Please add email content", type: "error" });
-      return;
-    }
-
-    try {
-      const finalEmailContent = wrapEmailTemplate(rawContent, formData.subject);
-
-      const campaignData = new FormData();
-      campaignData.append("name", formData.name);
-      campaignData.append("subject", formData.subject);
-      campaignData.append("content", finalEmailContent);
-      campaignData.append("targetAll", String(formData.targetAll));
-      campaignData.append("sendNow", String(formData.sendNow));
-      campaignData.append("recurring", String(formData.recurring));
-      campaignData.append("campaignType", formData.campaignType);
-
-      if (draftId) {
-        campaignData.append("campaignId", draftId);
-      }
-
-      // FIX: Send arrays as JSON strings for FormData
-      if (!formData.targetAll) {
-        campaignData.append("institutions", JSON.stringify(formData.institutions));
-        campaignData.append("departments", JSON.stringify(formData.departments));
-        campaignData.append("levels", JSON.stringify(formData.levels));
-      }
-
-      if (formData.sendAt) {
-        campaignData.append("sendAt", formData.sendAt);
-      }
-
-      // FIX: Send timeSlots as JSON string
-      if (formData.timeSlots && formData.timeSlots.length > 0) {
-        campaignData.append("timeSlots", JSON.stringify(formData.timeSlots));
-      }
-
-      // Attachments
-      attachments.forEach((file) => campaignData.append("attachments", file));
-
-      await createCampaign(campaignData)
-        .unwrap()
-        .then((res) => {
-          setToast({
-            message: formData.sendAt
-              ? "Campaign scheduled successfully!"
-              : "Campaign sent successfully!",
-            type: "success",
-          });
-
-          setTimeout(() => {
-            resetForm();
-            navigate(`/dashboard/campaign/${res.data.id}`);
-          }, 3000);
-        });
-    } catch (error: any) {
-      setToast({
-        message: error?.data?.message || "Failed to create campaign. Please try again.",
-        type: "error",
-      });
-    }
+  const onSubmit = () => {
+    handleSubmit({
+      formData,
+      editor,
+      attachments,
+      institutions,
+      draftId,
+      createCampaign,
+      setToast,
+      resetForm,
+      navigate,
+    });
   };
 
   if (!editor || (isLoadingCampaign && draftId)) {
@@ -460,6 +341,11 @@ const CreateCampaignPage: React.FC = () => {
         hour12: true,
       })
     : null;
+
+  // Calculate minimum schedule time
+  const minScheduleDateTime = new Date(Date.now() + MINIMUM_SCHEDULE_HOURS * 60 * 60 * 1000);
+  const minScheduleDate = minScheduleDateTime.toISOString().split("T")[0];
+  const minScheduleTime = minScheduleDateTime.toTimeString().slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-3 sm:py-6">
@@ -515,7 +401,7 @@ const CreateCampaignPage: React.FC = () => {
                     <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                       <button
                         type="button"
-                        onClick={handleSaveDraft}
+                        onClick={onSaveDraft}
                         disabled={isSavingOrUpdating}
                         className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-white bg-white/20 hover:bg-white/30 rounded-lg transition backdrop-blur-sm disabled:opacity-50"
                         title="Save Draft"
@@ -548,39 +434,79 @@ const CreateCampaignPage: React.FC = () => {
                         {showScheduleModal && (
                           <div
                             ref={scheduleDropdownRef}
-                            className="absolute right-0 top-full mt-2 bg-white rounded-lg shadow-xl border border-gray-200 w-72 sm:w-80 z-50 p-4"
+                            className="fixed sm:absolute right-2 sm:right-0 left-2 sm:left-auto top-16 sm:top-full sm:mt-2 bg-white rounded-lg shadow-xl border border-gray-200 w-auto sm:w-80 z-50 p-4 max-h-[calc(100vh-5rem)] overflow-y-auto"
                           >
-                            <h3 className="text-base font-bold text-gray-900 mb-3">
+                            <h3 className="text-base font-bold text-gray-900 mb-2">
                               Schedule Campaign
                             </h3>
+                            <p className="text-xs text-gray-600 mb-3 bg-yellow-50 border border-yellow-200 rounded p-2">
+                              ⏰ Campaigns must be scheduled at least{" "}
+                              <strong>{MINIMUM_SCHEDULE_HOURS} hours</strong> in advance for admin
+                              review.
+                            </p>
                             <div className="space-y-3">
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Date
+                                  Start Date
                                 </label>
                                 <input
                                   type="date"
                                   value={scheduleDate}
                                   onChange={(e) => setScheduleDate(e.target.value)}
-                                  min={new Date().toISOString().split("T")[0]}
+                                  min={minScheduleDate}
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                               </div>
                               <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                  Time
+                                  Start Time
                                 </label>
                                 <input
                                   type="time"
                                   value={scheduleTime}
                                   onChange={(e) => setScheduleTime(e.target.value)}
+                                  min={
+                                    scheduleDate === minScheduleDate ? minScheduleTime : undefined
+                                  }
                                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
                                 />
                               </div>
+
+                              <div className="border-t pt-3">
+                                <div className="flex items-center justify-between mb-1.5">
+                                  <label className="block text-xs font-medium text-gray-700">
+                                    End Date (Optional - For Recurring)
+                                  </label>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-1.5 bg-blue-50 border border-blue-200 rounded p-2">
+                                  📅 Recurring campaigns can run for a maximum of{" "}
+                                  <strong>7 days</strong>
+                                </p>
+                                <input
+                                  type="date"
+                                  value={endDate}
+                                  onChange={(e) => setEndDate(e.target.value)}
+                                  min={scheduleDate || minScheduleDate}
+                                  max={getMaxEndDate(scheduleDate)}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                  End Time (Optional)
+                                </label>
+                                <input
+                                  type="time"
+                                  value={endTime}
+                                  onChange={(e) => setEndTime(e.target.value)}
+                                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+                                />
+                              </div>
+
                               <div className="flex gap-2 pt-1">
                                 <button
                                   type="button"
-                                  onClick={handleSchedule}
+                                  onClick={handleScheduleClick}
                                   className="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
                                 >
                                   Schedule
@@ -610,7 +536,7 @@ const CreateCampaignPage: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={onSubmit}
                         disabled={isSending}
                         className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-1.5 text-xs sm:text-sm bg-white text-blue-600 hover:bg-gray-50 rounded-lg transition shadow-sm font-semibold disabled:opacity-50"
                       >
@@ -619,7 +545,7 @@ const CreateCampaignPage: React.FC = () => {
                         ) : (
                           <Send size={16} className="mr-1" />
                         )}
-                        <span>{formData.sendAt ? "Send Scheduled" : "Send Now"}</span>
+                        <span>{formData.sendAt ? "Schedule & Submit" : "Submit for Review"}</span>
                       </button>
                     </div>
                   </div>
@@ -630,7 +556,6 @@ const CreateCampaignPage: React.FC = () => {
                 <div className="bg-gray-50 min-h-[400px] sm:min-h-[600px]">
                   <div className="max-w-4xl mx-auto">
                     <div className="bg-white border-gray-200 overflow-hidden">
-                      {/* SUBJECT + SCHEDULE ON SAME LINE */}
                       <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200">
                         <div className="flex-1">
                           <p className="text-xs text-gray-500 mb-0.5">Subject:</p>
@@ -654,7 +579,6 @@ const CreateCampaignPage: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Editor */}
                       <div
                         className="p-4 sm:p-4 relative min-h-[300px] sm:min-h-[400px]"
                         ref={editorRef}
@@ -677,7 +601,6 @@ const CreateCampaignPage: React.FC = () => {
                         )}
                       </div>
 
-                      {/* Footer */}
                       <div className="bg-gray-900 text-white p-4 sm:p-5 border-t border-gray-800">
                         <div className="text-center">
                           <h3 className="text-sm sm:text-base font-bold mb-1.5">About AbS</h3>
@@ -741,7 +664,6 @@ const CreateCampaignPage: React.FC = () => {
         )}
       </div>
 
-      {/* Hidden File Input */}
       <input
         ref={fileInputRef}
         type="file"
@@ -750,55 +672,11 @@ const CreateCampaignPage: React.FC = () => {
         className="hidden"
       />
 
-      {/* Image Upload */}
       <input
         ref={imageInputRef}
         type="file"
         accept="image/*"
-        onChange={async (e) => {
-          const file = e.target.files?.[0];
-          if (file && editor) {
-            try {
-              const uploadId = `upload-${Date.now()}`;
-
-              const reader = new FileReader();
-              reader.onload = (event) => {
-                const dataUrl = event.target?.result as string;
-                editor.chain().focus().setImage({ src: dataUrl, alt: "Uploading..." }).run();
-              };
-              reader.readAsDataURL(file);
-
-              const formData = new FormData();
-              formData.append("attachments", file);
-              const response = await uploadAttachments(formData).unwrap();
-              const imageUrl = response.data[0]?.url;
-              if (!imageUrl) throw new Error("No URL returned");
-
-              const { state } = editor;
-              let imagePos: number | null = null;
-              state.doc.descendants((node, pos) => {
-                if (node.type.name === "image" && node.attrs.uploading === uploadId) {
-                  imagePos = pos;
-                  return false;
-                }
-              });
-
-              if (imagePos !== null) {
-                const { tr } = state;
-                tr.setNodeMarkup(imagePos, undefined, {
-                  src: imageUrl,
-                  alt: file.name,
-                  uploading: null,
-                });
-                editor.view.dispatch(tr);
-              }
-            } catch (error: any) {
-              console.log(error);
-              setToast({ message: "Image upload failed", type: "error" });
-            }
-          }
-          e.target.value = "";
-        }}
+        onChange={handleImageUpload}
         className="hidden"
         disabled={isUploadingImage}
       />

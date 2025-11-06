@@ -14,6 +14,7 @@ import {
   XCircle,
   Filter,
   Edit3,
+  Calendar,
 } from "lucide-react";
 import { useGetHistoryQuery, useResendCampaignMutation } from "../../redux/campaign/campaign-api";
 import { CampaignStatus } from "../../types/models";
@@ -23,7 +24,7 @@ const HistoryPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "SENT" | "FAILED">("");
+  const [statusFilter, setStatusFilter] = useState<"" | CampaignStatus>("");
   const [showFilters, setShowFilters] = useState(false);
   const [resendingId, setResendingId] = useState<string | null>(null);
 
@@ -91,7 +92,7 @@ const HistoryPage: React.FC = () => {
       SENT: <CheckCircle2 size={14} className="mr-1" />,
       FAILED: <XCircle size={14} className="mr-1" />,
       PENDING: <Clock size={14} className="mr-1" />,
-      SCHEDULED: <Clock size={14} className="mr-1" />,
+      SCHEDULED: <Calendar size={14} className="mr-1" />,
       DRAFT: <Clock size={14} className="mr-1" />,
     };
 
@@ -104,6 +105,15 @@ const HistoryPage: React.FC = () => {
       </span>
     );
   };
+
+  // Status filter options
+  const statusOptions: Array<{ value: "" | CampaignStatus; label: string; color: string }> = [
+    { value: "", label: "All", color: "bg-blue-600" },
+    { value: "SENT", label: "Sent", color: "bg-green-600" },
+    { value: "FAILED", label: "Failed", color: "bg-red-600" },
+    { value: "PENDING", label: "Pending", color: "bg-yellow-600" },
+    { value: "SCHEDULED", label: "Scheduled", color: "bg-blue-600" },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
@@ -132,10 +142,19 @@ const HistoryPage: React.FC = () => {
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="sm:w-auto px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition inline-flex items-center justify-center"
+              className={`sm:w-auto px-4 py-2 border rounded-lg transition inline-flex items-center justify-center ${
+                showFilters
+                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                  : "border-gray-300 hover:bg-gray-50 text-gray-700"
+              }`}
             >
               <Filter size={20} className="mr-2" />
               Filters
+              {statusFilter && (
+                <span className="ml-2 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  1
+                </span>
+              )}
             </button>
           </div>
 
@@ -144,37 +163,38 @@ const HistoryPage: React.FC = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setStatusFilter("")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                    statusFilter === ""
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  All
-                </button>
-                <button
-                  onClick={() => setStatusFilter("SENT")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                    statusFilter === "SENT"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  Sent
-                </button>
-                <button
-                  onClick={() => setStatusFilter("FAILED")}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
-                    statusFilter === "FAILED"
-                      ? "bg-red-600 text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  Failed
-                </button>
+                {statusOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setStatusFilter(option.value);
+                      setPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${
+                      statusFilter === option.value
+                        ? `${option.color} text-white`
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
               </div>
+
+              {/* Active Filters Summary */}
+              {statusFilter && (
+                <div className="mt-3 flex items-center justify-between">
+                  <p className="text-sm text-gray-600">
+                    Filtering by: <span className="font-medium">{statusFilter}</span>
+                  </p>
+                  <button
+                    onClick={() => setStatusFilter("")}
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -200,6 +220,17 @@ const HistoryPage: React.FC = () => {
                   ? "Try adjusting your filters"
                   : "Your sent campaigns will appear here"}
               </p>
+              {(search || statusFilter) && (
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setStatusFilter("");
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                >
+                  Clear all filters
+                </button>
+              )}
             </div>
           ) : (
             <>
@@ -230,7 +261,7 @@ const HistoryPage: React.FC = () => {
                       <tr key={campaign.id} className="hover:bg-gray-50 transition">
                         <td className="px-6 py-4">
                           <div className="flex items-start">
-                            <Clock className="text-gray-400 mr-3 mt-1 flex-shrink-0" size={20} />
+                            <Clock className="text-gray-400 mr-3 mt-1 shrink-0" size={20} />
                             <div>
                               <div className="text-sm font-medium text-gray-900">
                                 {campaign.name}
@@ -313,7 +344,7 @@ const HistoryPage: React.FC = () => {
                 {data.data.map((campaign) => (
                   <div key={campaign.id} className="p-4">
                     <div className="flex items-start mb-3">
-                      <Clock className="text-gray-400 mr-3 mt-1 flex-shrink-0" size={20} />
+                      <Clock className="text-gray-400 mr-3 mt-1 shrink-0" size={20} />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-sm font-medium text-gray-900 truncate">
                           {campaign.name}

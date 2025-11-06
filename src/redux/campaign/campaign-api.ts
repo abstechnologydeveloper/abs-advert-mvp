@@ -48,8 +48,12 @@ export const campaignServiceApi = api.injectEndpoints({
         console.log("getCampaignById called with ID:", id);
         return `/ads/campaigns/${id}`;
       },
-      providesTags: (id) => [{ type: "Campaigns", id }],
-      // Force refetch on every mount to ensure fresh data
+      providesTags: (result, error, id) => {
+        console.log(error);
+        console.log(result);
+        return [{ type: "Campaigns", id }];
+      },
+
       keepUnusedDataFor: 0,
     }),
 
@@ -72,14 +76,14 @@ export const campaignServiceApi = api.injectEndpoints({
 
     updateDraft: builder.mutation({
       query: ({ id, data }) => {
-        console.log("📤 updateDraft payload >>>", { id, data }); // 👈 add this line
+        console.log("📤 updateDraft called with ID:", id);
         return {
           url: `/ads/campaigns/draft/${id}`,
           method: "PUT",
           body: data,
         };
       },
-      invalidatesTags: ({ id }) => ["Drafts", { type: "Campaigns", id }],
+      invalidatesTags: ({ id }) => ["Drafts", { type: "Campaigns", id }, "Stats"],
     }),
 
     getDrafts: builder.query({

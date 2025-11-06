@@ -42,23 +42,37 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
   // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Check if click is outside color picker
       if (colorPickerRef.current && !colorPickerRef.current.contains(event.target as Node)) {
         setShowColorPicker(false);
       }
+
+      // Check if click is outside highlight picker
       if (
         highlightPickerRef.current &&
         !highlightPickerRef.current.contains(event.target as Node)
       ) {
         setShowHighlightPicker(false);
       }
+
+      // Check if click is outside typography dropdown
       if (typographyRef.current && !typographyRef.current.contains(event.target as Node)) {
         setShowTypography(false);
       }
     };
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+    // Only add listener when a dropdown is open
+    if (showColorPicker || showHighlightPicker || showTypography) {
+      // Use setTimeout to prevent immediate closing on the same click that opened it
+      setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+      }, 0);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showColorPicker, showHighlightPicker, showTypography]);
 
   const ToolbarButton: React.FC<{
     onClick: () => void;
@@ -69,7 +83,10 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
   }> = ({ onClick, isActive, icon, title, disabled }) => (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
       title={title}
       disabled={disabled}
       className={`p-2 rounded-lg transition-all ${
@@ -196,7 +213,13 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
         >
           <button
             type="button"
-            onClick={() => setShowTypography(!showTypography)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTypography(!showTypography);
+              // Close other dropdowns
+              setShowColorPicker(false);
+              setShowHighlightPicker(false);
+            }}
             className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-gray-100 text-gray-700 text-sm font-medium min-w-[120px] justify-between"
             title="Typography"
           >
@@ -217,12 +240,14 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
                   ? typographyRef.current.getBoundingClientRect().left
                   : 0,
               }}
+              onClick={(e) => e.stopPropagation()}
             >
               {typographyOptions.map((option) => (
                 <button
                   key={option.name}
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     option.action();
                     setShowTypography(false);
                   }}
@@ -244,9 +269,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
           <div className="relative" ref={colorPickerRef}>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowColorPicker(!showColorPicker);
                 setShowHighlightPicker(false);
+                setShowTypography(false);
               }}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
               title="Text Color"
@@ -264,6 +291,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
                     ? colorPickerRef.current.getBoundingClientRect().left
                     : 0,
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <p className="text-xs font-semibold text-gray-700 mb-2">Text Color</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -271,7 +299,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
                     <button
                       key={color.value}
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         editor.chain().focus().setColor(color.value).run();
                         setShowColorPicker(false);
                       }}
@@ -294,9 +323,11 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
           <div className="relative" ref={highlightPickerRef}>
             <button
               type="button"
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 setShowHighlightPicker(!showHighlightPicker);
                 setShowColorPicker(false);
+                setShowTypography(false);
               }}
               className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
               title="Highlight Color"
@@ -314,6 +345,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
                     ? highlightPickerRef.current.getBoundingClientRect().left
                     : 0,
                 }}
+                onClick={(e) => e.stopPropagation()}
               >
                 <p className="text-xs font-semibold text-gray-700 mb-2">Highlight</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -321,7 +353,8 @@ export const Toolbar: React.FC<ToolbarProps> = ({ editor, imageInputRef }) => {
                     <button
                       key={color.value}
                       type="button"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (color.value === "transparent") {
                           editor.chain().focus().unsetHighlight().run();
                         } else {
