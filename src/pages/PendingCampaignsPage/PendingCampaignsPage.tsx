@@ -103,7 +103,7 @@ const PendingCampaignsPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6. md:p-6">
+    <div className="space-y-6 p-3 md:p-6">
       {/* Header */}
       <div className="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-xl shadow-lg p-6 text-white">
         <div className="flex items-center justify-between">
