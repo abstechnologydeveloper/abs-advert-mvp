@@ -5,7 +5,7 @@ import DashboardLayout from "./layouts/DashboardLayout";
 import OverviewPage from "./pages/OverviewPage";
 import CreateCampaignPage from "./pages/CreateCampaignPage/CreateCampaignPage";
 import DraftsPage from "./pages/DraftsPage/DraftsPage";
-import PendingCampaignsPage from "./pages/PendingCampaignsPage/PendingCampaignsPage"; // NEW!
+import PendingCampaignsPage from "./pages/PendingCampaignsPage/PendingCampaignsPage";
 import HistoryPage from "./pages/HistoryPage/HistoryPage";
 import NoPermissionPage from "./components/NoPermissionPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
@@ -13,6 +13,7 @@ import ContactUsPage from "./pages/ContactUsPage/ContactUsPage";
 import SettingsPage from "./pages/SettingsPage";
 import NotificationPage from "./pages/Notifications/NotificationPage";
 import CampaignDetailsPage from "./pages/CampaignDetailPage/CampaignDetailPage";
+import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuidelinesPage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -60,18 +61,22 @@ const App: React.FC = () => {
         >
           {/* Default redirect */}
           <Route index element={<Navigate to="overview" replace />} />
+
           {/* Core Pages */}
           <Route path="overview" element={<OverviewPage />} />
           <Route path="create-campaign" element={<CreateCampaignPage />} />
-          <Route path="pending" element={<PendingCampaignsPage />} /> {/* NEW! */}
+          <Route path="pending" element={<PendingCampaignsPage />} />
           <Route path="drafts" element={<DraftsPage />} />
           <Route path="history" element={<HistoryPage />} />
+
           {/* Campaign Details */}
           <Route path="campaign/:id" element={<CampaignDetailsPage />} />
           <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
           <Route path="edit-failed/:id" element={<CreateCampaignPage />} />
+          <Route path="campaign-guidelines" element={<CampaignGuidelinesPage />} />
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
+
           {/* Quills Ads */}
           <Route
             path="app-quills-ads"
@@ -85,6 +90,7 @@ const App: React.FC = () => {
             path="quills-ads-history"
             element={<NoPermissionPage feature="Quills Advertising" />}
           />
+
           {/* Blog Ads */}
           <Route path="web-blog-ads" element={<NoPermissionPage feature="Blog Advertising" />} />
           <Route path="blog-ads-drafts" element={<NoPermissionPage feature="Blog Advertising" />} />
@@ -92,6 +98,7 @@ const App: React.FC = () => {
             path="blog-ads-history"
             element={<NoPermissionPage feature="Blog Advertising" />}
           />
+
           {/* Scholarship Ads */}
           <Route
             path="web-scholarship-ads"
@@ -109,6 +116,7 @@ const App: React.FC = () => {
             path="scholarship-ads-history"
             element={<NoPermissionPage feature="Scholarship Advertising" />}
           />
+
           {/* Library Ads */}
           <Route
             path="web-library-ads"
@@ -126,10 +134,12 @@ const App: React.FC = () => {
             path="library-ads-history"
             element={<NoPermissionPage feature="Library Advertising" />}
           />
+
           {/* Settings & Others */}
           <Route path="settings" element={<SettingsPage onLogout={handleLogout} />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
+
           {/* Fallback */}
           <Route path="*" element={<Navigate to="overview" replace />} />
         </Route>
