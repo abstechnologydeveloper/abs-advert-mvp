@@ -162,7 +162,7 @@ export const wrapEmailTemplate = (content: string, subject: string): string => {
                         <td style="background-color: #1a202c; padding: 30px 25px; text-align: center; color: #ffffff;">
                             <h3 style="color: #ffffff; font-size: 20px; margin: 0 0 12px; font-weight: 600;">About AbS</h3>
                             <p style="color: #cbd5e0; font-size: 15px; line-height: 1.7; margin: 0 0 20px;">
-                               Your comprehensive educational platform providing access to academic materials, scholarships, AI-powered learning tools, career opportunities, and student communities.
+                              Your comprehensive educational platform providing access to academic materials, scholarships, AI-powered learning tools, career opportunities, job connections, and student communities
                             </p>
                             
                             <!-- Social Links -->

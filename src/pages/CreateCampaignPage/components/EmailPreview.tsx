@@ -468,7 +468,7 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
             >
               Your comprehensive educational platform providing access to academic materials,
               scholarships, AI-powered learning tools, career opportunities, job connections, and
-              student communities.
+              student communities
             </p>
 
             {/* Social Links */}
