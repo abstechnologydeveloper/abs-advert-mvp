@@ -12,6 +12,9 @@ import {
   MessageCircle,
   ChevronDown,
   X,
+  AlertTriangle,
+  Save,
+  Loader2,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -19,10 +22,22 @@ interface SidebarProps {
   onLogout: () => void;
   isMobileOpen: boolean;
   onCloseMobile: () => void;
+  hasUnsavedChanges?: boolean;
+  onSaveAndNavigate?: () => Promise<void>;
+  isSaving?: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobile }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  onNavigate,
+  isMobileOpen,
+  onCloseMobile,
+  hasUnsavedChanges = false,
+  onSaveAndNavigate,
+  isSaving = false,
+}) => {
   const [expandedSection, setExpandedSection] = useState<string | null>("email");
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const location = useLocation();
   const currentPage = location.pathname.split("/").pop();
 
@@ -30,6 +45,35 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const handleNavigationAttempt = (path: string) => {
+    if (hasUnsavedChanges && currentPage !== path) {
+      setPendingPath(path);
+      setShowUnsavedModal(true);
+    } else {
+      onNavigate(path);
+      onCloseMobile();
+    }
+  };
+
+  const handleSaveAndNavigate = async () => {
+    if (onSaveAndNavigate && pendingPath) {
+      await onSaveAndNavigate();
+      setShowUnsavedModal(false);
+      onNavigate(pendingPath);
+      onCloseMobile();
+      setPendingPath(null);
+    }
+  };
+
+  const handleNavigateWithoutSaving = () => {
+    if (pendingPath) {
+      setShowUnsavedModal(false);
+      onNavigate(pendingPath);
+      onCloseMobile();
+      setPendingPath(null);
+    }
   };
 
   const navigationSections = [
@@ -144,6 +188,53 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
         />
       )}
 
+      {/* Unsaved Changes Modal */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowUnsavedModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-yellow-100 rounded-full">
+                <AlertTriangle className="w-6 h-6 text-yellow-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Unsaved Changes</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              You have unsaved changes. Would you like to save before leaving?
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={handleSaveAndNavigate}
+                disabled={isSaving}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4" />
+                )}
+                Save & Leave
+              </button>
+              <button
+                onClick={handleNavigateWithoutSaving}
+                className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-800 rounded-xl hover:bg-gray-300 transition font-medium"
+              >
+                Leave Without Saving
+              </button>
+              <button
+                onClick={() => setShowUnsavedModal(false)}
+                className="sm:w-auto px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition font-medium"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar */}
       <aside
         className={`
@@ -194,10 +285,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
                       return (
                         <button
                           key={item.path}
-                          onClick={() => {
-                            onNavigate(item.path);
-                            onCloseMobile();
-                          }}
+                          onClick={() => handleNavigationAttempt(item.path)}
                           className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group
                             ${
                               isActive(item.path)
@@ -251,10 +339,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
                               {subsection.items.map((item) => (
                                 <button
                                   key={item.path}
-                                  onClick={() => {
-                                    onNavigate(item.path);
-                                    onCloseMobile();
-                                  }}
+                                  onClick={() => handleNavigationAttempt(item.path)}
                                   className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm
                                     ${
                                       isActive(item.path)
@@ -283,10 +368,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
           <div className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-lg p-3 border border-blue-500/20">
             <p className="text-xs text-gray-300 mb-1">Need help?</p>
             <button
-              onClick={() => {
-                onNavigate("contact-us");
-                onCloseMobile();
-              }}
+              onClick={() => handleNavigationAttempt("contact-us")}
               className="text-sm font-medium text-blue-400 hover:text-blue-300 transition"
             >
               Contact Support →
@@ -308,6 +390,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onNavigate, isMobileOpen, onCloseMobi
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(255, 255, 255, 0.3);
+        }
+        @keyframes scale-in {
+          from {
+            transform: scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: scale(1);
+            opacity: 1;
+          }
+        }
+        .animate-scale-in {
+          animation: scale-in 0.2s ease-out;
         }
       `}</style>
     </>

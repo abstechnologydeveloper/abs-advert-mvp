@@ -34,7 +34,11 @@ export const handleSchedule = ({
     return;
   }
 
-  const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
+  // Create date in local timezone and preserve it
+  const [year, month, day] = scheduleDate.split("-").map(Number);
+  const [hours, minutes] = scheduleTime.split(":").map(Number);
+
+  const scheduledDateTime = new Date(year, month - 1, day, hours, minutes);
   const now = new Date();
   const timeDiff = scheduledDateTime.getTime() - now.getTime();
 
@@ -52,7 +56,10 @@ export const handleSchedule = ({
   let isRecurring = false;
 
   if (endDate && endTime) {
-    endDateTime = new Date(`${endDate}T${endTime}`);
+    const [endYear, endMonth, endDay] = endDate.split("-").map(Number);
+    const [endHours, endMinutes] = endTime.split(":").map(Number);
+
+    endDateTime = new Date(endYear, endMonth - 1, endDay, endHours, endMinutes);
 
     // Validate end time is after start time
     if (endDateTime <= scheduledDateTime) {

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Search, ChevronDown, X, CheckSquare, Square, Loader2, ChevronRight } from "lucide-react";
+import { Search, ChevronDown, X, CheckSquare, Square, Loader2, Filter } from "lucide-react";
 
 interface Option {
   id: string;
@@ -44,8 +44,8 @@ const colorClasses = {
   },
 };
 
-const ITEMS_PER_PAGE = 50;
-const MAX_VISIBLE_TAGS = 5;
+const ITEMS_PER_PAGE = 100;
+const MAX_VISIBLE_TAGS = 2;
 
 export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   label,
@@ -60,94 +60,49 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   helperText,
   getDisplayName,
 }) => {
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(ITEMS_PER_PAGE);
   const [showAllTags, setShowAllTags] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [tempSelectedValues, setTempSelectedValues] = useState<string[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Calculate dropdown position
+  // Focus search input when modal opens
   useEffect(() => {
-    if (showDropdown && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const scrollY = window.scrollY || window.pageYOffset;
-      const scrollX = window.scrollX || window.pageXOffset;
-
-      setDropdownPosition({
-        top: rect.bottom + scrollY + 4,
-        left: rect.left + scrollX,
-        width: rect.width,
-      });
+    if (showModal && searchInputRef.current) {
+      setTimeout(() => searchInputRef.current?.focus(), 100);
     }
-  }, [showDropdown]);
+  }, [showModal]);
 
-  // Close dropdown when clicking outside
+  // Initialize temp selection when modal opens
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node) &&
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-        setSearchQuery("");
-        setDisplayCount(ITEMS_PER_PAGE);
-      }
-    };
-
-    if (showDropdown) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
+    if (showModal) {
+      setTempSelectedValues([...selectedValues]);
+      setSearchQuery("");
+      setDisplayCount(ITEMS_PER_PAGE);
     }
-  }, [showDropdown]);
+  }, [showModal, selectedValues]);
 
-  // Close dropdown on Escape key
+  // Close modal on Escape key
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && showDropdown) {
-        setShowDropdown(false);
-        setSearchQuery("");
-        setDisplayCount(ITEMS_PER_PAGE);
-        triggerRef.current?.focus();
+      if (event.key === "Escape" && showModal) {
+        setShowModal(false);
       }
     };
 
-    if (showDropdown) {
+    if (showModal) {
       document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  }, [showDropdown]);
-
-  // Handle window resize
-  useEffect(() => {
-    const handleResize = () => {
-      if (showDropdown && triggerRef.current) {
-        const rect = triggerRef.current.getBoundingClientRect();
-        const scrollY = window.scrollY || window.pageYOffset;
-        const scrollX = window.scrollX || window.pageXOffset;
-
-        setDropdownPosition({
-          top: rect.bottom + scrollY + 4,
-          left: rect.left + scrollX,
-          width: rect.width,
-        });
-      }
-    };
-
-    if (showDropdown) {
-      window.addEventListener("resize", handleResize);
-      window.addEventListener("scroll", handleResize, true);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = "hidden";
       return () => {
-        window.removeEventListener("resize", handleResize);
-        window.removeEventListener("scroll", handleResize, true);
+        document.removeEventListener("keydown", handleEscape);
+        document.body.style.overflow = "unset";
       };
     }
-  }, [showDropdown]);
+  }, [showModal]);
 
   // Filter options based on search
   const filteredOptions = useMemo(() => {
@@ -165,20 +120,20 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   const remainingCount = filteredOptions.length - displayCount;
 
   const toggleOption = (id: string) => {
-    const updated = selectedValues.includes(id)
-      ? selectedValues.filter((v) => v !== id)
-      : [...selectedValues, id];
-    onChange(updated);
+    const updated = tempSelectedValues.includes(id)
+      ? tempSelectedValues.filter((v) => v !== id)
+      : [...tempSelectedValues, id];
+    setTempSelectedValues(updated);
   };
 
   const selectAll = () => {
     const allIds = filteredOptions.map((opt) => opt.id);
-    const newSelections = [...new Set([...selectedValues, ...allIds])];
-    onChange(newSelections);
+    const newSelections = [...new Set([...tempSelectedValues, ...allIds])];
+    setTempSelectedValues(newSelections);
   };
 
   const clearAll = () => {
-    onChange([]);
+    setTempSelectedValues([]);
   };
 
   const removeItem = (id: string) => {
@@ -196,10 +151,13 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
     setDisplayCount((prev) => prev + ITEMS_PER_PAGE);
   };
 
-  const closeDropdown = () => {
-    setShowDropdown(false);
-    setSearchQuery("");
-    setDisplayCount(ITEMS_PER_PAGE);
+  const handleApply = () => {
+    onChange(tempSelectedValues);
+    setShowModal(false);
+  };
+
+  const handleCancel = () => {
+    setShowModal(false);
   };
 
   const colors = colorClasses[tagColor];
@@ -208,148 +166,164 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
   const visibleTags = showAllTags ? selectedValues : selectedValues.slice(0, MAX_VISIBLE_TAGS);
   const hiddenTagsCount = selectedValues.length - MAX_VISIBLE_TAGS;
 
-  // Dropdown content
-  const dropdownContent = showDropdown && (
-    <div
-      ref={dropdownRef}
-      className="fixed bg-white border border-gray-300 rounded-lg shadow-2xl overflow-hidden z-[9999]"
-      style={{
-        top: `${dropdownPosition.top}px`,
-        left: `${dropdownPosition.left}px`,
-        width: window.innerWidth < 640 ? `calc(100vw - 32px)` : `${dropdownPosition.width}px`,
-        maxWidth: window.innerWidth < 640 ? "calc(100vw - 32px)" : "500px",
-      }}
-    >
-      {/* Header with Close Button */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-50">
-        <span className="text-xs font-semibold text-gray-700">
-          {options.length > 0 ? `${options.length} total items` : "No items"}
-        </span>
-        <button
-          onClick={closeDropdown}
-          type="button"
-          className="p-1 hover:bg-gray-200 rounded transition"
-          title="Close"
-        >
-          <X size={16} className="text-gray-600" />
-        </button>
-      </div>
-
-      {/* Search Input */}
-      <div className="p-2 border-b border-gray-200">
-        <div className="relative">
-          <Search size={14} className="absolute left-2 top-2.5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setDisplayCount(ITEMS_PER_PAGE);
-            }}
-            placeholder={searchPlaceholder}
-            className="w-full pl-8 pr-3 py-2 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-            autoFocus
-          />
-        </div>
-      </div>
-
-      {/* Bulk Actions */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-100 bg-gray-50">
-        <span className="text-xs text-gray-600">
-          {filteredOptions.length > 0
-            ? `${filteredOptions.length} ${searchQuery ? "found" : "item(s)"}`
-            : "No matches"}
-        </span>
-        <div className="flex gap-2">
-          <button
-            onClick={selectAll}
-            type="button"
-            className="text-xs text-blue-600 hover:text-blue-700 font-medium transition disabled:opacity-50"
-            disabled={filteredOptions.length === 0}
-          >
-            Select All
-          </button>
-          <button
-            onClick={clearAll}
-            type="button"
-            className="text-xs text-red-600 hover:text-red-700 font-medium transition disabled:opacity-50"
-            disabled={selectedValues.length === 0}
-          >
-            Clear All
-          </button>
-        </div>
-      </div>
-
-      {/* Options List */}
-      <div className="max-h-[50vh] sm:max-h-80 overflow-y-auto">
-        {filteredOptions.length === 0 ? (
-          <div className="px-3 py-8 text-center">
-            <div className="text-gray-400 mb-2">
-              <Search size={32} className="mx-auto" />
+  // Modal content
+  const modalContent = showModal && (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-2 sm:p-4">
+      {/* Modal Container */}
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
+          <div className="flex items-center gap-3">
+            {icon && <div className="text-blue-600">{icon}</div>}
+            <div>
+              <h3 className="text-lg font-bold text-gray-900">{label}</h3>
+              <p className="text-xs text-gray-600 mt-0.5">
+                {tempSelectedValues.length} of {options.length} selected
+              </p>
             </div>
-            <p className="text-xs text-gray-500">
-              {searchQuery ? "No items match your search" : "No items available"}
-            </p>
           </div>
-        ) : (
-          <>
-            {displayedOptions.map((option) => {
-              const isSelected = selectedValues.includes(option.id);
-              return (
-                <label
-                  key={option.id}
-                  className="flex items-center px-3 py-2.5 hover:bg-blue-50 cursor-pointer transition group"
-                >
-                  <div className="flex items-center flex-1 min-w-0">
-                    {isSelected ? (
-                      <CheckSquare size={16} className="text-blue-600 flex-shrink-0 mr-2" />
-                    ) : (
-                      <Square
-                        size={16}
-                        className="text-gray-400 group-hover:text-gray-600 flex-shrink-0 mr-2 transition"
-                      />
-                    )}
-                    <span className="text-xs text-gray-900 truncate">{option.label}</span>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={() => toggleOption(option.id)}
-                    className="sr-only"
-                  />
-                </label>
-              );
-            })}
+          <button
+            onClick={handleCancel}
+            type="button"
+            className="p-2 hover:bg-white/50 rounded-lg transition"
+            title="Close"
+          >
+            <X size={20} className="text-gray-600" />
+          </button>
+        </div>
 
-            {/* Load More Button */}
-            {hasMore && (
-              <div className="border-t border-gray-200 p-2 bg-gray-50">
-                <button
-                  onClick={loadMore}
-                  type="button"
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition"
-                >
-                  <span>Load {Math.min(remainingCount, ITEMS_PER_PAGE)} more</span>
-                  <ChevronRight size={14} />
-                </button>
-                <p className="text-center text-xs text-gray-500 mt-1">
-                  Showing {displayedOptions.length} of {filteredOptions.length}
-                </p>
+        {/* Search Bar */}
+        <div className="px-4 sm:px-6 py-3 border-b border-gray-200 bg-gray-50">
+          <div className="relative">
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setDisplayCount(ITEMS_PER_PAGE);
+              }}
+              placeholder={searchPlaceholder}
+              className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            />
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        <div className="flex items-center justify-between px-4 sm:px-6 py-2 border-b border-gray-200 bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Filter size={14} className="text-gray-500" />
+            <span className="text-sm text-gray-600">
+              {filteredOptions.length > 0
+                ? `${filteredOptions.length} ${searchQuery ? "found" : "available"}`
+                : "No matches"}
+            </span>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={selectAll}
+              type="button"
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium transition disabled:opacity-50"
+              disabled={filteredOptions.length === 0}
+            >
+              Select All
+            </button>
+            <button
+              onClick={clearAll}
+              type="button"
+              className="text-sm text-red-600 hover:text-red-700 font-medium transition disabled:opacity-50"
+              disabled={tempSelectedValues.length === 0}
+            >
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        {/* Options List */}
+        <div className="flex-1 overflow-y-auto">
+          {filteredOptions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 px-4">
+              <div className="text-gray-300 mb-4">
+                <Search size={48} />
               </div>
-            )}
-          </>
-        )}
-      </div>
+              <p className="text-sm font-medium text-gray-900 mb-1">No items found</p>
+              <p className="text-xs text-gray-500 text-center max-w-sm">
+                {searchQuery
+                  ? `No items match "${searchQuery}". Try a different search term.`
+                  : "No items available to select."}
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {displayedOptions.map((option) => {
+                const isSelected = tempSelectedValues.includes(option.id);
+                return (
+                  <label
+                    key={option.id}
+                    className="flex items-center px-4 sm:px-6 py-3 hover:bg-blue-50 cursor-pointer transition group"
+                  >
+                    <div className="flex items-center flex-1 min-w-0 gap-3">
+                      <div className="flex-shrink-0">
+                        {isSelected ? (
+                          <CheckSquare size={20} className="text-blue-600" />
+                        ) : (
+                          <Square
+                            size={20}
+                            className="text-gray-400 group-hover:text-gray-600 transition"
+                          />
+                        )}
+                      </div>
+                      <span className="text-sm text-gray-900 truncate font-medium">
+                        {option.label}
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleOption(option.id)}
+                      className="sr-only"
+                    />
+                  </label>
+                );
+              })}
 
-      {/* Footer Actions */}
-      <div className="border-t border-gray-200 p-2 bg-gray-50 flex gap-2">
-        <button
-          onClick={closeDropdown}
-          type="button"
-          className="flex-1 px-3 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded transition"
-        >
-          Done ({selectedValues.length} selected)
-        </button>
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="px-4 sm:px-6 py-4 bg-gray-50 border-t border-gray-200">
+                  <button
+                    onClick={loadMore}
+                    type="button"
+                    className="w-full px-4 py-2.5 text-sm font-medium text-blue-600 hover:text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg transition"
+                  >
+                    Load {Math.min(remainingCount, ITEMS_PER_PAGE)} more items
+                  </button>
+                  <p className="text-center text-xs text-gray-500 mt-2">
+                    Showing {displayedOptions.length} of {filteredOptions.length}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-4 sm:px-6 py-4 border-t border-gray-200 bg-gray-50 flex gap-3">
+          <button
+            onClick={handleCancel}
+            type="button"
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-700 bg-white hover:bg-gray-50 border border-gray-300 rounded-lg transition"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleApply}
+            type="button"
+            className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm"
+          >
+            Apply ({tempSelectedValues.length} selected)
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -366,19 +340,15 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
 
       {/* Trigger Button */}
       <button
-        ref={triggerRef}
         type="button"
-        onClick={() => setShowDropdown(!showDropdown)}
+        onClick={() => setShowModal(true)}
         disabled={isLoading}
         className="w-full px-3 py-2 text-sm text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white hover:bg-gray-50 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed transition"
       >
         <span className="truncate text-gray-500">
           {selectedValues.length > 0 ? `${selectedValues.length} selected` : placeholder}
         </span>
-        <ChevronDown
-          size={16}
-          className={`flex-shrink-0 ml-2 transition-transform ${showDropdown ? "rotate-180" : ""}`}
-        />
+        <ChevronDown size={16} className="flex-shrink-0 ml-2 text-gray-400" />
       </button>
 
       {/* Selected Items as Tags */}
@@ -388,7 +358,7 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
             {visibleTags.map((id) => (
               <span
                 key={id}
-                className={`inline-flex items-center gap-1 px-2 py-1 ${colors.tag} rounded-md text-xs`}
+                className={`inline-flex items-center gap-1 px-2 py-1 ${colors.tag} rounded-md text-xs font-medium`}
               >
                 <span className="max-w-[150px] truncate">{getDisplayLabel(id)}</span>
                 <button
@@ -423,8 +393,8 @@ export const MultiSelectDropdown: React.FC<MultiSelectDropdownProps> = ({
         </div>
       )}
 
-      {/* Render dropdown in portal */}
-      {typeof document !== "undefined" && createPortal(dropdownContent, document.body)}
+      {/* Render modal in portal */}
+      {typeof document !== "undefined" && createPortal(modalContent, document.body)}
     </div>
   );
 };
