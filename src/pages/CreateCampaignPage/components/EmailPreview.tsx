@@ -11,7 +11,7 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
     <div
       style={{
         minHeight: "100vh",
-        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        background: "#111827",
         padding: "40px 20px",
       }}
     >
@@ -19,37 +19,42 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
         dangerouslySetInnerHTML={{
           __html: `
           .preview-content * { margin: 0; padding: 0; box-sizing: border-box; }
+          .preview-content { 
+            overflow-wrap: break-word; 
+            word-wrap: break-word;
+            max-width: 100%;
+          }
           .preview-content p { 
             margin: 0 0 16px; 
             font-size: 16px;
-            color: #4a5568;
+            color: #1f2937;
             line-height: 1.8;
           }
           .preview-content h1 { 
-            color: #1a202c;
-            font-size: 32px;
+            color: #111827;
+            font-size: 28px;
             font-weight: 700;
-            margin: 32px 0 16px;
-            line-height: 1.2;
-          }
-          .preview-content h2 { 
-            color: #1a202c;
-            font-size: 26px;
-            font-weight: 600;
-            margin: 28px 0 14px;
+            margin: 24px 0 12px;
             line-height: 1.3;
           }
-          .preview-content h3 { 
-            color: #2d3748;
-            font-size: 22px;
+          .preview-content h2 { 
+            color: #111827;
+            font-size: 24px;
             font-weight: 600;
-            margin: 24px 0 12px;
+            margin: 20px 0 10px;
             line-height: 1.4;
+          }
+          .preview-content h3 { 
+            color: #374151;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 16px 0 8px;
+            line-height: 1.5;
           }
           .preview-content strong,
           .preview-content b { 
             font-weight: 600;
-            color: #1a202c;
+            color: #111827;
           }
           .preview-content em,
           .preview-content i { 
@@ -63,8 +68,8 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
           }
           .preview-content ul,
           .preview-content ol { 
-            margin: 16px 0; 
-            padding-left: 28px;
+            margin: 12px 0; 
+            padding-left: 24px;
           }
           .preview-content ul {
             list-style-type: disc;
@@ -73,8 +78,8 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
             list-style-type: decimal;
           }
           .preview-content li { 
-            margin-bottom: 10px;
-            color: #4a5568;
+            margin-bottom: 8px;
+            color: #1f2937;
             font-size: 16px;
             line-height: 1.7;
           }
@@ -85,6 +90,10 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
             color: #667eea; 
             text-decoration: underline;
             font-weight: 500;
+            word-wrap: break-word;
+            overflow-wrap: anywhere;
+            display: inline;
+            max-width: 100%;
           }
           .preview-content a:hover { 
             color: #5568d3;
@@ -93,72 +102,72 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
             max-width: 100%; 
             height: auto; 
             display: block; 
-            margin: 24px auto;
-            border-radius: 12px;
+            margin: 20px auto;
+            border-radius: 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
           }
           .preview-content table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin: 24px 0;
+            margin: 20px 0;
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
           }
           .preview-content table td,
           .preview-content table th { 
-            border: 1px solid #e2e8f0; 
-            padding: 14px;
+            border: 1px solid #e5e7eb; 
+            padding: 12px;
             text-align: left;
             font-size: 15px;
           }
           .preview-content table th { 
-            background: #f7fafc; 
+            background: #f9fafb; 
             font-weight: 600;
-            color: #2d3748;
+            color: #374151;
           }
           .preview-content blockquote { 
-            border-left: 4px solid #667eea; 
-            padding: 16px 20px; 
-            margin: 24px 0;
-            background: #f7fafc;
+            border-left: 3px solid #667eea; 
+            padding: 12px 16px; 
+            margin: 16px 0;
+            background: #f9fafb;
             font-style: italic; 
-            color: #4a5568;
-            border-radius: 0 8px 8px 0;
+            color: #4b5563;
+            border-radius: 0 6px 6px 0;
           }
           .preview-content blockquote p {
             margin: 0;
           }
           .preview-content pre {
-            background: #2d3748;
-            color: #f7fafc;
-            padding: 20px;
-            border-radius: 8px;
+            background: #1f2937;
+            color: #f3f4f6;
+            padding: 16px;
+            border-radius: 6px;
             overflow-x: auto;
-            margin: 24px 0;
+            margin: 16px 0;
           }
           .preview-content code {
-            background: #f1f5f9;
-            color: #e53e3e;
-            padding: 3px 6px;
-            border-radius: 4px;
+            background: #f3f4f6;
+            color: #dc2626;
+            padding: 2px 6px;
+            border-radius: 3px;
             font-size: 14px;
             font-family: 'Courier New', monospace;
           }
           .preview-content pre code {
             background: none;
-            color: #f7fafc;
+            color: #f3f4f6;
             padding: 0;
           }
           .preview-content hr {
             border: none;
-            border-top: 2px solid #e2e8f0;
-            margin: 32px 0;
+            border-top: 2px solid #e5e7eb;
+            margin: 24px 0;
           }
           .preview-content mark {
             background-color: #fef08a;
             padding: 2px 4px;
-            border-radius: 3px;
+            border-radius: 2px;
           }
         `,
         }}
@@ -168,51 +177,54 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
         <div
           style={{
             background: "#ffffff",
-            borderRadius: "16px",
+            borderRadius: "12px",
             overflow: "hidden",
-            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+            boxShadow: "0 20px 60px rgba(0, 0, 0, 0.5)",
           }}
         >
-          {/* Email Header */}
+          {/* Compact Professional Header */}
           <div
             style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              padding: "10px 20px",
-              textAlign: "center",
+              background: "#ffffff",
+              padding: "16px 24px",
+              borderBottom: "1px solid #e5e7eb",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "16px",
             }}
           >
             <img
               src="https://aws-s3-aws-bucket.s3.us-east-1.amazonaws.com/uploads/1762192698428-ABS_New_Logo.jpg"
               alt="AbS"
               style={{
-                maxWidth: "150px",
-                height: "auto",
-                margin: "0 auto 20px",
+                height: "36px",
+                width: "auto",
                 display: "block",
-                background: "white",
-                padding: "10px",
-                borderRadius: "12px",
               }}
             />
             <p
               style={{
-                color: "#e0e7ff",
-                fontSize: "14px",
+                color: "#6b7280",
+                fontSize: "12px",
                 margin: "0",
+                fontWeight: "500",
+                whiteSpace: "nowrap",
               }}
             >
-              Empowering Students Through Technology & Education
+              Education & Technology
             </p>
           </div>
 
-          {/* Email Content with Embedded Styles */}
+          {/* Email Content */}
           <div
             style={{
-              padding: "40px 30px",
-              lineHeight: "1.8",
-              color: "#333",
+              padding: "32px 24px",
+              lineHeight: "1.7",
+              color: "#1f2937",
               fontFamily:
                 "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
+              background: "#ffffff",
             }}
           >
             <div
@@ -220,131 +232,144 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
               dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
             />
 
-            {/* CTA Button */}
-          </div>
-
-          {/* Email Footer */}
-          <div
-            style={{
-              background: "#1a202c",
-              padding: "40px 30px",
-              textAlign: "center",
-              color: "#fff",
-            }}
-          >
-            <h3
-              style={{
-                color: "#fff",
-                fontSize: "20px",
-                margin: "0 0 16px",
-                fontWeight: "600",
-              }}
-            >
-              About AbS
-            </h3>
-            <p
-              style={{
-                color: "#cbd5e0",
-                fontSize: "14px",
-                lineHeight: "1.7",
-                margin: "0 0 20px",
-              }}
-            >
-              Your comprehensive educational platform providing access to academic materials,
-              scholarships, AI-powered learning tools, and career opportunities. Join thousands of
-              students advancing their education with ABS.
-            </p>
-
-            <div style={{ margin: "24px 0" }}>
+            {/* Enhanced CTA Button */}
+            <div style={{ textAlign: "center", margin: "32px 0 16px" }}>
               <a
                 href="https://www.abstechconnect.com/"
                 style={{
                   display: "inline-block",
-                  margin: "0 12px",
-                  color: "#60a5fa",
+                  padding: "12px 32px",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  color: "#ffffff",
                   textDecoration: "none",
-                  fontSize: "14px",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  fontSize: "15px",
+                  boxShadow: "0 4px 12px rgba(102, 126, 234, 0.4)",
+                  transition: "all 0.3s ease",
+                }}
+              >
+                Visit AbS Platform →
+              </a>
+            </div>
+          </div>
+
+          {/* Compact Footer */}
+          <div
+            style={{
+              background: "#f9fafb",
+              padding: "24px",
+              borderTop: "1px solid #e5e7eb",
+            }}
+          >
+            {/* Social Links */}
+            <div style={{ textAlign: "center", marginBottom: "16px" }}>
+              <a
+                href="https://www.abstechconnect.com/"
+                style={{
+                  display: "inline-block",
+                  margin: "0 8px",
+                  color: "#6b7280",
+                  textDecoration: "none",
+                  fontSize: "12px",
                   fontWeight: "500",
                 }}
               >
-                🌐 Website
+                Website
               </a>
+              <span style={{ color: "#d1d5db" }}>•</span>
               <a
                 href="https://x.com/ABSTEAM01"
                 style={{
                   display: "inline-block",
-                  margin: "0 12px",
-                  color: "#60a5fa",
+                  margin: "0 8px",
+                  color: "#6b7280",
                   textDecoration: "none",
-                  fontSize: "14px",
+                  fontSize: "12px",
                   fontWeight: "500",
                 }}
               >
-                🐦 Twitter
+                Twitter
               </a>
+              <span style={{ color: "#d1d5db" }}>•</span>
               <a
                 href="https://www.linkedin.com/company/abstechconnect1/"
                 style={{
                   display: "inline-block",
-                  margin: "0 12px",
-                  color: "#60a5fa",
+                  margin: "0 8px",
+                  color: "#6b7280",
                   textDecoration: "none",
-                  fontSize: "14px",
+                  fontSize: "12px",
                   fontWeight: "500",
                 }}
               >
-                💼 LinkedIn
+                LinkedIn
               </a>
+              <span style={{ color: "#d1d5db" }}>•</span>
               <a
                 href="https://web.facebook.com/people/ABS-Solution/61564113997916/"
                 style={{
                   display: "inline-block",
-                  margin: "0 12px",
-                  color: "#60a5fa",
+                  margin: "0 8px",
+                  color: "#6b7280",
                   textDecoration: "none",
-                  fontSize: "14px",
+                  fontSize: "12px",
                   fontWeight: "500",
                 }}
               >
-                📘 Facebook
+                Facebook
               </a>
             </div>
 
-            <div
-              style={{
-                borderTop: "1px solid #374151",
-                margin: "24px 0",
-              }}
-            />
-
+            {/* Company Info */}
             <p
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 color: "#9ca3af",
-                margin: "0",
-                lineHeight: "1.6",
+                textAlign: "center",
+                lineHeight: "1.5",
+                margin: "0 0 12px",
               }}
             >
-              © 2025 AbS. All rights reserved.
-              <br />
-              Empowering education through innovation and technology.
+              AbS - Empowering education through innovation and technology
+              <br />© 2025 AbS. All rights reserved.
             </p>
+
+            {/* Unsubscribe Link */}
+            <div
+              style={{
+                textAlign: "center",
+                paddingTop: "12px",
+                borderTop: "1px solid #e5e7eb",
+              }}
+            >
+              <a
+                href="{{unsubscribe_url}}"
+                style={{
+                  color: "#9ca3af",
+                  textDecoration: "underline",
+                  fontSize: "11px",
+                }}
+              >
+                Unsubscribe from these emails
+              </a>
+            </div>
           </div>
         </div>
 
         {/* Back to Edit Button */}
-        <div style={{ textAlign: "center", marginTop: "24px" }}>
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
           <button
             onClick={onClose}
             style={{
-              padding: "12px 24px",
+              padding: "10px 20px",
               background: "white",
               color: "#111827",
               border: "none",
               borderRadius: "8px",
               fontWeight: "600",
-              fontSize: "16px",
-              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+              fontSize: "14px",
+              boxShadow: "0 4px 12px rgba(0, 0, 0, 0.3)",
               cursor: "pointer",
             }}
           >

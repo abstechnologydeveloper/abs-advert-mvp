@@ -16,6 +16,7 @@ import CampaignDetailsPage from "./pages/CampaignDetailPage/CampaignDetailPage";
 import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuidelinesPage";
 import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCampaignsPage";
 import BillingPage from "./pages/BillingPage/BillingPage";
+import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -148,7 +149,7 @@ const App: React.FC = () => {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="overview" replace />} />
         </Route>
-
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
         {/* Redirect root */}
         <Route
           path="/"
