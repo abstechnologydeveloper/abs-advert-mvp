@@ -36,7 +36,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   onSaveAndNavigate,
   isSaving = false,
 }) => {
-  const [expandedSection, setExpandedSection] = useState<string | null>("email");
+  const [expandedSection, setExpandedSection] = useState<string | null>(
+    "email"
+  );
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
   const location = useLocation();
@@ -173,11 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       title: "Support",
       items: [
         {
-          path: "pricing",
-          label: "Billing Pricing",
-          icon: CreditCard,
-        },
-        {
           path: "billing",
           label: "Billing & Payments",
           icon: CreditCard,
@@ -223,7 +220,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="p-3 bg-yellow-100 rounded-full">
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">Unsaved Changes</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Unsaved Changes
+              </h3>
             </div>
             <p className="text-gray-600 mb-6">
               You have unsaved changes. Would you like to save before leaving?
@@ -265,7 +264,11 @@ const Sidebar: React.FC<SidebarProps> = ({
           w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800
           text-white flex flex-col
           transform transition-all duration-300 ease-in-out
-          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          ${
+            isMobileOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
+          }
           shadow-2xl
         `}
       >
@@ -331,7 +334,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {section.sections.map((subsection) => {
                       const Icon = subsection.icon;
                       const isExpanded = expandedSection === subsection.key;
-                      const hasActiveItem = subsection.items.some((item) => isActive(item.path));
+                      const hasActiveItem = subsection.items.some((item) =>
+                        isActive(item.path)
+                      );
 
                       return (
                         <div key={subsection.key}>
@@ -347,7 +352,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                           >
                             <div className="flex items-center space-x-3">
                               <Icon className="w-5 h-5" />
-                              <span className="font-medium">{subsection.label}</span>
+                              <span className="font-medium">
+                                {subsection.label}
+                              </span>
                             </div>
                             <ChevronDown
                               className={`w-4 h-4 transition-transform ${
@@ -362,7 +369,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                               {subsection.items.map((item) => (
                                 <button
                                   key={item.path}
-                                  onClick={() => handleNavigationAttempt(item.path)}
+                                  onClick={() =>
+                                    handleNavigationAttempt(item.path)
+                                  }
                                   className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm
                                     ${
                                       isActive(item.path)
