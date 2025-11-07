@@ -189,6 +189,9 @@ export const wrapEmailTemplate = (content: string, subject: string): string => {
                                 © 2025 AbS. All rights reserved.<br>
                                 Empowering education through innovation and technology.
                             </p>
+                            <p style="font-size: 13px; color: #9ca3af; margin: 20px 0 0; line-height: 1.6;">
+                                If you no longer wish to receive these emails, <a href="https://www.abstechconnect.com/unsubscribe" style="color: #60a5fa; text-decoration: underline;">unsubscribe here</a>.
+                            </p>
                         </td>
                     </tr>
                     

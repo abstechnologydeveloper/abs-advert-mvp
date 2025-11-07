@@ -573,6 +573,23 @@ export const EmailPreview: React.FC<EmailPreviewProps> = ({ editor, onClose }) =
               <br />
               Empowering education through innovation and technology.
             </p>
+            <p
+              style={{
+                fontSize: "13px",
+                color: "#9ca3af",
+                margin: "20px 0 0",
+                lineHeight: "1.6",
+              }}
+            >
+              If you no longer wish to receive these emails,{" "}
+              <a
+                href="https://www.abstechconnect.com/unsubscribe"
+                style={{ color: "#60a5fa", textDecoration: "underline" }}
+              >
+                unsubscribe here
+              </a>
+              .
+            </p>
           </div>
         </div>
 
