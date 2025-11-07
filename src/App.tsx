@@ -17,7 +17,6 @@ import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuide
 import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCampaignsPage";
 import BillingPage from "./pages/BillingPage/BillingPage";
 import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
-import BillingPricing from "./pages/BillingPricing/BillingPricing";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -90,7 +89,6 @@ const App: React.FC = () => {
           />
           {/* Quills Ads */}
           <Route path="billing" element={<BillingPage />} />
-          <Route path="pricing" element={<BillingPricing />} />
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
 

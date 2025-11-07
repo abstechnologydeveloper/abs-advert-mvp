@@ -140,12 +140,14 @@ interface Subscription {
 }
 
 const BillingPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<"overview" | "plans" | "history" | "wallet">(
-    "overview"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "plans" | "history" | "wallet"
+  >("overview");
   const [showFundModal, setShowFundModal] = useState(false);
   const [fundAmount, setFundAmount] = useState("");
-  const [selectedPlan, setSelectedPlan] = useState<keyof typeof PLAN_CONFIGS | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<
+    keyof typeof PLAN_CONFIGS | null
+  >(null);
 
   // Mock data - replace with actual API calls
   const [walletBalance] = useState(100000);
@@ -241,7 +243,7 @@ const BillingPage: React.FC = () => {
   const usagePercentages = {
     dailyEmails: (usage.emailsSentToday / currentPlan.dailyEmailLimit) * 100,
     monthlyEmails: (usage.emailsSentThisMonth / currentPlan.monthlyEmailLimit) * 100,
-    schedulesCount: usage.activeSchedules,
+    contacts: (usage.contactsCount / currentPlan.contactLimit) * 100,
   };
 
   return (
@@ -249,7 +251,9 @@ const BillingPage: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Billing & Subscriptions</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Billing & Subscriptions
+          </h1>
           <p className="text-gray-600">
             Manage your wallet, subscription plans and campaign spending
           </p>
@@ -260,7 +264,9 @@ const BillingPage: React.FC = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-blue-100 text-sm mb-2">Wallet Balance</p>
-              <h2 className="text-4xl font-bold">{formatCurrency(walletBalance)}</h2>
+              <h2 className="text-4xl font-bold">
+                {formatCurrency(walletBalance)}
+              </h2>
             </div>
             <Wallet className="w-16 h-16 text-white opacity-20" />
           </div>
@@ -326,9 +332,16 @@ const BillingPage: React.FC = () => {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        usagePercentages.dailyEmails >= 80 ? "bg-red-500" : "bg-blue-600"
+                        usagePercentages.dailyEmails >= 80
+                          ? "bg-red-500"
+                          : "bg-blue-600"
                       }`}
-                      style={{ width: `${Math.min(usagePercentages.dailyEmails, 100)}%` }}
+                      style={{
+                        width: `${Math.min(
+                          usagePercentages.dailyEmails,
+                          100
+                        )}%`,
+                      }}
                     />
                   </div>
                   <span className="text-xs text-gray-500">
@@ -352,9 +365,16 @@ const BillingPage: React.FC = () => {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        usagePercentages.monthlyEmails >= 80 ? "bg-red-500" : "bg-green-600"
+                        usagePercentages.monthlyEmails >= 80
+                          ? "bg-red-500"
+                          : "bg-green-600"
                       }`}
-                      style={{ width: `${Math.min(usagePercentages.monthlyEmails, 100)}%` }}
+                      style={{
+                        width: `${Math.min(
+                          usagePercentages.monthlyEmails,
+                          100
+                        )}%`,
+                      }}
                     />
                   </div>
                   <span className="text-xs text-gray-500">
@@ -362,7 +382,8 @@ const BillingPage: React.FC = () => {
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  of {currentPlan.monthlyEmailLimit.toLocaleString()} monthly limit
+                  of {currentPlan.monthlyEmailLimit.toLocaleString()} monthly
+                  limit
                 </p>
               </div>
 
@@ -378,9 +399,9 @@ const BillingPage: React.FC = () => {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        usage.activeSchedules >= 80 ? "bg-red-500" : "bg-purple-600"
+                        usagePercentages.contacts >= 80 ? "bg-red-500" : "bg-purple-600"
                       }`}
-                      style={{ width: `${Math.min(usage.activeSchedules, 100)}%` }}
+                      style={{ width: `${Math.min(usagePercentages.contacts, 100)}%` }}
                     />
                   </div>
                   <span className="text-xs text-gray-500">{usage.activeSchedules.toFixed(0)}%</span>
@@ -408,7 +429,9 @@ const BillingPage: React.FC = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
                   className={`py-4 font-medium transition-all relative ${
-                    activeTab === tab.id ? "text-blue-600" : "text-gray-600 hover:text-gray-900"
+                    activeTab === tab.id
+                      ? "text-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
                   {tab.label}
@@ -424,46 +447,10 @@ const BillingPage: React.FC = () => {
             {/* Overview Tab */}
             {activeTab === "overview" && (
               <div className="space-y-6">
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Campaign Type Access</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {Object.entries({
-                      email: "Email Campaigns",
-                      quills: "Quills Ads",
-                      blog: "Blog Ads",
-                      scholarship: "Scholarship Ads",
-                      library: "Library Ads",
-                    }).map(([type, label]) => {
-                      const isAvailable = currentPlan.campaignTypes.includes(type);
-                      const Icon = getCampaignTypeIcon(type);
-                      return (
-                        <div
-                          key={type}
-                          className={`p-4 rounded-xl border-2 ${
-                            isAvailable
-                              ? "bg-white border-green-200"
-                              : "bg-gray-50 border-gray-200 opacity-50"
-                          }`}
-                        >
-                          <Icon
-                            className={`w-6 h-6 mb-2 ${
-                              isAvailable ? "text-green-600" : "text-gray-400"
-                            }`}
-                          />
-                          <p className="text-sm font-medium text-gray-900">{label}</p>
-                          {isAvailable ? (
-                            <CheckCircle className="w-4 h-4 text-green-600 mt-1" />
-                          ) : (
-                            <span className="text-xs text-gray-500 mt-1">Upgrade needed</span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 <div>
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Recent Transactions
+                  </h3>
                   <div className="space-y-3">
                     {transactions.slice(0, 3).map((transaction) => (
                       <div
@@ -481,7 +468,9 @@ const BillingPage: React.FC = () => {
                             </div>
                           )}
                           <div>
-                            <p className="font-semibold text-gray-900">{transaction.description}</p>
+                            <p className="font-semibold text-gray-900">
+                              {transaction.description}
+                            </p>
                             <p className="text-sm text-gray-500">
                               {transaction.date} • {transaction.reference}
                             </p>
@@ -490,7 +479,9 @@ const BillingPage: React.FC = () => {
                         <div className="text-right">
                           <p
                             className={`font-bold ${
-                              transaction.type === "credit" ? "text-green-600" : "text-red-600"
+                              transaction.type === "credit"
+                                ? "text-green-600"
+                                : "text-red-600"
                             }`}
                           >
                             {transaction.type === "credit" ? "+" : "-"}
@@ -507,13 +498,60 @@ const BillingPage: React.FC = () => {
             {/* Plans Tab */}
             {activeTab === "plans" && (
               <div className="space-y-6">
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Campaign Type Access
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                    {Object.entries({
+                      email: "Email Campaigns",
+                      quills: "Quills Ads",
+                      blog: "Blog Ads",
+                      scholarship: "Scholarship Ads",
+                      library: "Library Ads",
+                    }).map(([type, label]) => {
+                      const isAvailable =
+                        currentPlan.campaignTypes.includes(type);
+                      const Icon = getCampaignTypeIcon(type);
+                      return (
+                        <div
+                          key={type}
+                          className={`p-4 rounded-xl border-2 ${
+                            isAvailable
+                              ? "bg-white border-green-200"
+                              : "bg-gray-50 border-gray-200 opacity-50"
+                          }`}
+                        >
+                          <Icon
+                            className={`w-6 h-6 mb-2 ${
+                              isAvailable ? "text-green-600" : "text-gray-400"
+                            }`}
+                          />
+                          <p className="text-sm font-medium text-gray-900">
+                            {label}
+                          </p>
+                          {isAvailable ? (
+                            <CheckCircle className="w-4 h-4 text-green-600 mt-1" />
+                          ) : (
+                            <span className="text-xs text-gray-500 mt-1">
+                              Upgrade needed
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start space-x-3">
                   <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900 mb-1">Payment from Wallet</p>
+                    <p className="text-sm font-medium text-blue-900 mb-1">
+                      Payment from Wallet
+                    </p>
                     <p className="text-sm text-blue-700">
-                      Subscription fees will be deducted from your wallet balance. If insufficient,
-                      you'll need to fund your wallet first.
+                      Subscription fees will be deducted from your wallet
+                      balance. If insufficient, you'll need to fund your wallet
+                      first.
                     </p>
                   </div>
                 </div>
@@ -521,14 +559,18 @@ const BillingPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {Object.entries(PLAN_CONFIGS).map(([planName, plan]) => {
                     const isCurrentPlan = subscription.planName === planName;
-                    const cost = calculateSubscriptionCost(planName as keyof typeof PLAN_CONFIGS);
+                    const cost = calculateSubscriptionCost(
+                      planName as keyof typeof PLAN_CONFIGS
+                    );
                     const Icon = getPlanIcon(planName);
 
                     return (
                       <div
                         key={planName}
                         className={`relative rounded-2xl p-6 border-2 transition hover:shadow-lg ${
-                          isCurrentPlan ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
+                          isCurrentPlan
+                            ? "border-blue-500 bg-blue-50"
+                            : "border-gray-200 bg-white"
                         }`}
                       >
                         {isCurrentPlan && (
@@ -542,10 +584,14 @@ const BillingPage: React.FC = () => {
                             <Icon className="w-6 h-6 text-white" />
                           </div>
                           <div>
-                            <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
+                            <h3 className="text-xl font-bold text-gray-900">
+                              {plan.name}
+                            </h3>
                             <p className="text-2xl font-bold text-blue-600">
                               {formatCurrency(plan.price)}
-                              <span className="text-sm text-gray-600 font-normal">/month</span>
+                              <span className="text-sm text-gray-600 font-normal">
+                                /month
+                              </span>
                             </p>
                           </div>
                         </div>
@@ -570,7 +616,8 @@ const BillingPage: React.FC = () => {
                                   Insufficient Balance
                                 </p>
                                 <p className="text-sm text-yellow-700">
-                                  You need {formatCurrency(cost.shortfall)} more to subscribe
+                                  You need {formatCurrency(cost.shortfall)} more
+                                  to subscribe
                                 </p>
                               </div>
                             )}
@@ -578,7 +625,8 @@ const BillingPage: React.FC = () => {
                             {cost.canAfford && (
                               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                                 <p className="text-sm text-green-700">
-                                  {formatCurrency(cost.willUse)} will be deducted from your wallet
+                                  {formatCurrency(cost.willUse)} will be
+                                  deducted from your wallet
                                 </p>
                               </div>
                             )}
@@ -588,7 +636,9 @@ const BillingPage: React.FC = () => {
                                 if (!cost.canAfford) {
                                   setShowFundModal(true);
                                 } else {
-                                  setSelectedPlan(planName as keyof typeof PLAN_CONFIGS);
+                                  setSelectedPlan(
+                                    planName as keyof typeof PLAN_CONFIGS
+                                  );
                                 }
                               }}
                               className={`w-full py-3 rounded-xl font-medium transition ${
@@ -597,7 +647,9 @@ const BillingPage: React.FC = () => {
                                   : "bg-yellow-600 text-white hover:bg-yellow-700"
                               }`}
                             >
-                              {cost.canAfford ? "Subscribe Now" : "Fund Wallet First"}
+                              {cost.canAfford
+                                ? "Subscribe Now"
+                                : "Fund Wallet First"}
                             </button>
                           </div>
                         )}
@@ -612,7 +664,9 @@ const BillingPage: React.FC = () => {
             {activeTab === "history" && (
               <div>
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-bold text-gray-900">All Transactions</h3>
+                  <h3 className="text-lg font-bold text-gray-900">
+                    All Transactions
+                  </h3>
                   <button className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition">
                     <Download className="w-4 h-4" />
                     <span>Export CSV</span>
@@ -653,26 +707,36 @@ const BillingPage: React.FC = () => {
                             {transaction.type === "credit" ? (
                               <div className="flex items-center space-x-2">
                                 <ArrowDownRight className="w-4 h-4 text-green-600" />
-                                <span className="text-sm font-medium text-green-600">Credit</span>
+                                <span className="text-sm font-medium text-green-600">
+                                  Credit
+                                </span>
                               </div>
                             ) : (
                               <div className="flex items-center space-x-2">
                                 <ArrowUpRight className="w-4 h-4 text-red-600" />
-                                <span className="text-sm font-medium text-red-600">Debit</span>
+                                <span className="text-sm font-medium text-red-600">
+                                  Debit
+                                </span>
                               </div>
                             )}
                           </td>
                           <td className="py-4 px-4">
-                            <p className="font-medium text-gray-900">{transaction.description}</p>
+                            <p className="font-medium text-gray-900">
+                              {transaction.description}
+                            </p>
                           </td>
-                          <td className="py-4 px-4 text-sm text-gray-600">{transaction.date}</td>
+                          <td className="py-4 px-4 text-sm text-gray-600">
+                            {transaction.date}
+                          </td>
                           <td className="py-4 px-4 text-sm text-gray-600">
                             {transaction.reference}
                           </td>
                           <td className="py-4 px-4 text-right">
                             <span
                               className={`font-semibold ${
-                                transaction.type === "credit" ? "text-green-600" : "text-red-600"
+                                transaction.type === "credit"
+                                  ? "text-green-600"
+                                  : "text-red-600"
                               }`}
                             >
                               {transaction.type === "credit" ? "+" : "-"}
@@ -704,8 +768,12 @@ const BillingPage: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white">
                     <DollarSign className="w-8 h-8 mb-4 opacity-80" />
-                    <p className="text-green-100 text-sm mb-2">Available Balance</p>
-                    <h3 className="text-3xl font-bold">{formatCurrency(walletBalance)}</h3>
+                    <p className="text-green-100 text-sm mb-2">
+                      Available Balance
+                    </p>
+                    <h3 className="text-3xl font-bold">
+                      {formatCurrency(walletBalance)}
+                    </h3>
                   </div>
 
                   <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
@@ -714,7 +782,10 @@ const BillingPage: React.FC = () => {
                     <h3 className="text-3xl font-bold">
                       {formatCurrency(
                         transactions
-                          .filter((t) => t.type === "credit" && t.status === "completed")
+                          .filter(
+                            (t) =>
+                              t.type === "credit" && t.status === "completed"
+                          )
                           .reduce((sum, t) => sum + t.amount, 0)
                       )}
                     </h3>
@@ -726,7 +797,10 @@ const BillingPage: React.FC = () => {
                     <h3 className="text-3xl font-bold">
                       {formatCurrency(
                         transactions
-                          .filter((t) => t.type === "debit" && t.status === "completed")
+                          .filter(
+                            (t) =>
+                              t.type === "debit" && t.status === "completed"
+                          )
                           .reduce((sum, t) => sum + t.amount, 0)
                       )}
                     </h3>
@@ -734,7 +808,9 @@ const BillingPage: React.FC = () => {
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Wallet Information</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Wallet Information
+                  </h3>
                   <div className="space-y-4">
                     <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-xl">
                       <Info className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
@@ -743,8 +819,13 @@ const BillingPage: React.FC = () => {
                           How Wallet Payments Work
                         </p>
                         <ul className="text-sm text-blue-700 space-y-1">
-                          <li>• Subscription fees are automatically deducted from your wallet</li>
-                          <li>• Fund your wallet via Paystack for instant credit</li>
+                          <li>
+                            • Subscription fees are automatically deducted from
+                            your wallet
+                          </li>
+                          <li>
+                            • Fund your wallet via Paystack for instant credit
+                          </li>
                           <li>• Minimum funding amount: ₦10,000</li>
                           <li>• Withdrawals processed within 24-48 hours</li>
                         </ul>
@@ -758,13 +839,22 @@ const BillingPage: React.FC = () => {
                           Subscription Payment Process
                         </p>
                         <ul className="text-sm text-green-700 space-y-1">
-                          <li>• If wallet balance ≥ plan price: Full deduction from wallet</li>
                           <li>
-                            • If wallet balance &lt; plan price: You'll be prompted to fund the
-                            shortfall
+                            • If wallet balance ≥ plan price: Full deduction
+                            from wallet
                           </li>
-                          <li>• Example: ₦100,000 balance + ₦170,000 plan = Fund ₦70,000 more</li>
-                          <li>• Auto-renewal uses wallet balance each billing cycle</li>
+                          <li>
+                            • If wallet balance &lt; plan price: You'll be
+                            prompted to fund the shortfall
+                          </li>
+                          <li>
+                            • Example: ₦100,000 balance + ₦170,000 plan = Fund
+                            ₦70,000 more
+                          </li>
+                          <li>
+                            • Auto-renewal uses wallet balance each billing
+                            cycle
+                          </li>
                         </ul>
                       </div>
                     </div>
@@ -777,11 +867,16 @@ const BillingPage: React.FC = () => {
                         </p>
                         <ul className="text-sm text-yellow-700 space-y-1">
                           <li>
-                            • Ensure sufficient wallet balance before renewal date to avoid service
-                            interruption
+                            • Ensure sufficient wallet balance before renewal
+                            date to avoid service interruption
                           </li>
-                          <li>• Failed auto-renewals will suspend your subscription</li>
-                          <li>• You'll receive notifications 7 days before renewal</li>
+                          <li>
+                            • Failed auto-renewals will suspend your
+                            subscription
+                          </li>
+                          <li>
+                            • You'll receive notifications 7 days before renewal
+                          </li>
                           <li>• All transactions are secured and encrypted</li>
                         </ul>
                       </div>
@@ -790,7 +885,9 @@ const BillingPage: React.FC = () => {
                 </div>
 
                 <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-4">
+                    Quick Actions
+                  </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <button
                       onClick={() => setShowFundModal(true)}
@@ -801,8 +898,12 @@ const BillingPage: React.FC = () => {
                           <Plus className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-gray-900">Fund Wallet</p>
-                          <p className="text-sm text-gray-600">Add money via Paystack</p>
+                          <p className="font-medium text-gray-900">
+                            Fund Wallet
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Add money via Paystack
+                          </p>
                         </div>
                       </div>
                       <ArrowUpRight className="w-5 h-5 text-blue-600" />
@@ -814,8 +915,12 @@ const BillingPage: React.FC = () => {
                           <Download className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-gray-900">Withdraw Funds</p>
-                          <p className="text-sm text-gray-600">Transfer to bank account</p>
+                          <p className="font-medium text-gray-900">
+                            Withdraw Funds
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Transfer to bank account
+                          </p>
                         </div>
                       </div>
                       <ArrowUpRight className="w-5 h-5 text-green-600" />
@@ -827,8 +932,12 @@ const BillingPage: React.FC = () => {
                           <FileText className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-gray-900">Transaction Statement</p>
-                          <p className="text-sm text-gray-600">Download full history</p>
+                          <p className="font-medium text-gray-900">
+                            Transaction Statement
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Download full history
+                          </p>
                         </div>
                       </div>
                       <ArrowUpRight className="w-5 h-5 text-purple-600" />
@@ -840,8 +949,12 @@ const BillingPage: React.FC = () => {
                           <Shield className="w-5 h-5 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="font-medium text-gray-900">Security Settings</p>
-                          <p className="text-sm text-gray-600">Manage wallet security</p>
+                          <p className="font-medium text-gray-900">
+                            Security Settings
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            Manage wallet security
+                          </p>
                         </div>
                       </div>
                       <ArrowUpRight className="w-5 h-5 text-gray-600" />
@@ -859,7 +972,9 @@ const BillingPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Fund Your Wallet</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Fund Your Wallet
+              </h3>
               <button
                 onClick={() => setShowFundModal(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
@@ -870,7 +985,9 @@ const BillingPage: React.FC = () => {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (NGN)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Amount (NGN)
+                </label>
                 <input
                   type="number"
                   value={fundAmount}
@@ -896,13 +1013,18 @@ const BillingPage: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Current Balance:</span>
-                      <span className="font-medium">{formatCurrency(walletBalance)}</span>
+                      <span className="font-medium">
+                        {formatCurrency(walletBalance)}
+                      </span>
                     </div>
                     <div className="flex justify-between pt-2 border-t border-blue-200">
                       <span className="font-medium">Required:</span>
                       <span className="font-bold">
                         {formatCurrency(
-                          Math.max(0, PLAN_CONFIGS[selectedPlan].price - walletBalance)
+                          Math.max(
+                            0,
+                            PLAN_CONFIGS[selectedPlan].price - walletBalance
+                          )
                         )}
                       </span>
                     </div>
@@ -911,7 +1033,9 @@ const BillingPage: React.FC = () => {
               )}
 
               <div className="bg-gray-50 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-gray-900 mb-2">Payment Method</h4>
+                <h4 className="text-sm font-medium text-gray-900 mb-2">
+                  Payment Method
+                </h4>
                 <div className="flex items-center space-x-3 p-3 bg-white border border-gray-200 rounded-lg">
                   <img
                     src="https://paystack.com/assets/img/logo/logo.svg"
@@ -919,8 +1043,12 @@ const BillingPage: React.FC = () => {
                     className="h-6"
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">Paystack</p>
-                    <p className="text-xs text-gray-500">Card, Bank Transfer, USSD</p>
+                    <p className="text-sm font-medium text-gray-900">
+                      Paystack
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      Card, Bank Transfer, USSD
+                    </p>
                   </div>
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
@@ -929,7 +1057,11 @@ const BillingPage: React.FC = () => {
               <button
                 onClick={() => {
                   // Handle Paystack payment
-                  alert(`Initiating payment for ${formatCurrency(parseInt(fundAmount) || 0)}`);
+                  alert(
+                    `Initiating payment for ${formatCurrency(
+                      parseInt(fundAmount) || 0
+                    )}`
+                  );
                   setShowFundModal(false);
                 }}
                 disabled={!fundAmount || parseInt(fundAmount) < 10000}
@@ -951,7 +1083,9 @@ const BillingPage: React.FC = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">Confirm Subscription</h3>
+              <h3 className="text-xl font-bold text-gray-900">
+                Confirm Subscription
+              </h3>
               <button
                 onClick={() => setSelectedPlan(null)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition"
@@ -969,8 +1103,12 @@ const BillingPage: React.FC = () => {
                     })}
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900">{selectedPlan} Plan</h4>
-                    <p className="text-sm text-gray-600">Monthly Subscription</p>
+                    <h4 className="text-lg font-bold text-gray-900">
+                      {selectedPlan} Plan
+                    </h4>
+                    <p className="text-sm text-gray-600">
+                      Monthly Subscription
+                    </p>
                   </div>
                 </div>
 
@@ -988,16 +1126,28 @@ const BillingPage: React.FC = () => {
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-300">
-                    <span className="font-medium text-gray-900">Amount to Deduct:</span>
+                    <span className="font-medium text-gray-900">
+                      Amount to Deduct:
+                    </span>
                     <span className="font-bold text-blue-600">
-                      {formatCurrency(Math.min(walletBalance, PLAN_CONFIGS[selectedPlan].price))}
+                      {formatCurrency(
+                        Math.min(
+                          walletBalance,
+                          PLAN_CONFIGS[selectedPlan].price
+                        )
+                      )}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium text-gray-900">Remaining Balance:</span>
+                    <span className="font-medium text-gray-900">
+                      Remaining Balance:
+                    </span>
                     <span className="font-bold text-gray-900">
                       {formatCurrency(
-                        Math.max(0, walletBalance - PLAN_CONFIGS[selectedPlan].price)
+                        Math.max(
+                          0,
+                          walletBalance - PLAN_CONFIGS[selectedPlan].price
+                        )
                       )}
                     </span>
                   </div>
@@ -1005,14 +1155,21 @@ const BillingPage: React.FC = () => {
               </div>
 
               <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                <h4 className="text-sm font-medium text-green-900 mb-2">What You'll Get:</h4>
+                <h4 className="text-sm font-medium text-green-900 mb-2">
+                  What You'll Get:
+                </h4>
                 <ul className="space-y-1">
-                  {PLAN_CONFIGS[selectedPlan].features.slice(0, 4).map((feature, idx) => (
-                    <li key={idx} className="flex items-start space-x-2 text-sm text-green-700">
-                      <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
+                  {PLAN_CONFIGS[selectedPlan].features
+                    .slice(0, 4)
+                    .map((feature, idx) => (
+                      <li
+                        key={idx}
+                        className="flex items-start space-x-2 text-sm text-green-700"
+                      >
+                        <CheckCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
                 </ul>
               </div>
 
