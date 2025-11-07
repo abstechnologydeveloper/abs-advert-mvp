@@ -13,12 +13,6 @@ type ComparisonFeature = {
   values: (string | number)[];
 };
 
-type AddOn = {
-  title: string;
-  description: string;
-  price: string;
-};
-
 const plans: Plan[] = [
   {
     name: "Starter",
@@ -101,24 +95,6 @@ const comparisonData: ComparisonFeature[] = [
   },
 ];
 
-const addOns: AddOn[] = [
-  {
-    title: "Dedicated Account Manager",
-    description: "Get one-on-one guidance and strategic planning.",
-    price: "$50/month",
-  },
-  {
-    title: "Custom Integrations",
-    description:
-      "Integrate with your business tools via API or custom requests.",
-    price: "$75/setup",
-  },
-  {
-    title: "Advanced Training",
-    description: "Hands-on training sessions for your team.",
-    price: "$120/session",
-  },
-];
 
 const BillingPricing: React.FC = () => {
   return (
@@ -193,25 +169,6 @@ const BillingPricing: React.FC = () => {
             ))}
           </tbody>
         </table>
-      </div>
-
-      {/* === Add-ons Section === */}
-      <div className="mt-16">
-        <h3 className="text-3xl font-bold text-gray-900 mb-6 text-center">
-          Add-Ons and Additional Services
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {addOns.map((addOn) => (
-            <div
-              key={addOn.title}
-              className="bg-white rounded-xl shadow border p-6 text-center"
-            >
-              <h4 className="font-bold text-gray-800 mb-2">{addOn.title}</h4>
-              <p className="text-gray-600 mb-3">{addOn.description}</p>
-              <p className="text-blue-600 font-bold">{addOn.price}</p>
-            </div>
-          ))}
-        </div>
       </div>
 
       {/* === Upgrade Plans Section === */}
