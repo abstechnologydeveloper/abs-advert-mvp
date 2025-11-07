@@ -55,7 +55,7 @@ const PLAN_CONFIGS = {
     currency: "NGN",
     dailyEmailLimit: 10000,
     monthlyEmailLimit: 300000,
-    contactLimit: 10000,
+  
     userLimit: 2,
     scheduleLimit: null,
     allowRecurring: true,
@@ -79,7 +79,6 @@ const PLAN_CONFIGS = {
     currency: "NGN",
     dailyEmailLimit: 25000,
     monthlyEmailLimit: 750000,
-    contactLimit: 25000,
     userLimit: 3,
     scheduleLimit: null,
     allowRecurring: true,
@@ -243,7 +242,7 @@ const BillingPage: React.FC = () => {
   const usagePercentages = {
     dailyEmails: (usage.emailsSentToday / currentPlan.dailyEmailLimit) * 100,
     monthlyEmails: (usage.emailsSentThisMonth / currentPlan.monthlyEmailLimit) * 100,
-    contacts: (usage.contactsCount / currentPlan.contactLimit) * 100,
+    schedulesCount: usage.activeSchedules,
   };
 
   return (
@@ -370,27 +369,26 @@ const BillingPage: React.FC = () => {
 
               <div className="bg-gray-50 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-600">Contacts</span>
-                  <Users className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">Schedules</span>
+                  <Clock className="w-4 h-4 text-gray-400" /> {/* changed icon */}
                 </div>
                 <p className="text-2xl font-bold text-gray-900 mb-1">
-                  {usage.contactsCount.toLocaleString()}
+                  {usage.activeSchedules.toLocaleString()}
                 </p>
                 <div className="flex items-center space-x-2">
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-2 rounded-full ${
-                        usagePercentages.contacts >= 80 ? "bg-red-500" : "bg-purple-600"
+                        usage.activeSchedules >= 80 ? "bg-red-500" : "bg-purple-600"
                       }`}
-                      style={{ width: `${Math.min(usagePercentages.contacts, 100)}%` }}
+                      style={{ width: `${Math.min(usage.activeSchedules, 100)}%` }}
                     />
                   </div>
-                  <span className="text-xs text-gray-500">
-                    {usagePercentages.contacts.toFixed(0)}%
-                  </span>
+                  <span className="text-xs text-gray-500">{usage.activeSchedules.toFixed(0)}%</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-1">
-                  of {currentPlan.contactLimit.toLocaleString()} contact limit
+                  of {currentPlan.scheduleLimit ? currentPlan.scheduleLimit.toLocaleString() : "∞"}{" "}
+                  schedule limit
                 </p>
               </div>
             </div>
