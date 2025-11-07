@@ -173,6 +173,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       title: "Support",
       items: [
         {
+          path: "pricing",
+          label: "Billing Pricing",
+          icon: CreditCard,
+        },
+        {
           path: "billing",
           label: "Billing & Payments",
           icon: CreditCard,
