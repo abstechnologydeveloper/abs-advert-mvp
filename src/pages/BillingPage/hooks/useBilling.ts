@@ -1,12 +1,23 @@
-// ==================== hooks/useBilling.ts ====================
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ==================== hooks/useBilling.ts (Updated) ====================
 import { useState } from "react";
-import { CAMPAIGN_TYPES } from "../config/campaignTypes";
 import {
+  useGetWalletBalanceQuery,
+  useGetWalletSummaryQuery,
+  useGetSubscriptionPlansQuery,
+  useSubscribeToPlanMutation,
+  useInitializePaymentMutation,
+} from "../../../redux/biling/billing-api";
+import {
+  transformApiPlansToComponentFormat,
+  convertPlanNameToApiTier,
+  transformApiTransactions,
+} from "../utils/planTransformers";
+import {
+  CampaignTypeId,
   SubscriptionsState,
   UsageState,
-  Transaction,
   SelectedPlanForFunding,
-  CampaignTypeId,
 } from "../types/billing.types";
 
 export const useBilling = () => {
@@ -18,16 +29,43 @@ export const useBilling = () => {
   const [showFundModal, setShowFundModal] = useState<boolean>(false);
   const [selectedPlanForFunding, setSelectedPlanForFunding] =
     useState<SelectedPlanForFunding | null>(null);
-  const [walletBalance, setWalletBalance] = useState<number>(100000);
 
+  // RTK Query hooks - NOW WITH undefined PARAMETER
+  const {
+    data: walletBalanceData,
+    isLoading: walletLoading,
+    refetch: refetchBalance,
+  } = useGetWalletBalanceQuery(undefined);
+
+  const { data: walletSummaryData, refetch: refetchSummary } =
+    useGetWalletSummaryQuery(undefined);
+
+  const { data: plansData, isLoading: plansLoading } =
+    useGetSubscriptionPlansQuery(undefined);
+
+  const [subscribeToPlan, { isLoading: isSubscribing }] =
+    useSubscribeToPlanMutation();
+
+  const [initializePayment, { isLoading: isInitializingPayment }] =
+    useInitializePaymentMutation();
+
+  // Wallet balance
+  const walletBalance = walletBalanceData?.data?.balance || 0;
+
+  // Transformed plans
+  const transformedPlans = plansData?.success
+    ? transformApiPlansToComponentFormat(plansData.data)
+    : {};
+
+  // Transactions
+  const transactions = walletSummaryData?.success
+    ? transformApiTransactions(walletSummaryData.data.recentTransactions)
+    : [];
+
+
+  // Mock subscriptions and usage (replace with actual API when available)
   const [subscriptions, setSubscriptions] = useState<SubscriptionsState>({
-    email: {
-      planName: "Basic",
-      status: "active",
-      startDate: "2025-11-01",
-      endDate: "2025-12-01",
-      autoRenew: true,
-    },
+    email: null,
     quills: null,
     blog: null,
     scholarship: null,
@@ -35,114 +73,86 @@ export const useBilling = () => {
   });
 
   const [usage, setUsage] = useState<UsageState>({
-    email: { dailySent: 1250, monthlySent: 45000 },
+    email: { dailySent: 0, monthlySent: 0 },
     quills: { dailySent: 0, monthlySent: 0 },
     blog: { dailySent: 0, monthlySent: 0 },
     scholarship: { dailySent: 0, monthlySent: 0 },
     library: { dailySent: 0, monthlySent: 0 },
   });
 
-  const [transactions, setTransactions] = useState<Transaction[]>([
-    {
-      id: "TXN-001",
-      date: "2025-11-05",
-      description: "Wallet funding via Paystack",
-      type: "credit",
-      amount: 100000,
-      status: "completed",
-      reference: "PSK-2025-001",
-    },
-    {
-      id: "TXN-002",
-      date: "2025-11-01",
-      description: "Email Campaigns - Basic Plan",
-      type: "debit",
-      amount: 170000,
-      status: "completed",
-      reference: "SUB-EMAIL-001",
-    },
-    {
-      id: "TXN-003",
-      date: "2025-10-28",
-      description: "Wallet funding via Paystack",
-      type: "credit",
-      amount: 200000,
-      status: "completed",
-      reference: "PSK-2025-002",
-    },
-  ]);
+  /**
+   * Handle wallet funding with payment gateway
+   */
+  const handleFundWallet = async (amount: number): Promise<void> => {
+    try {
+      const response = await initializePayment({ amount }).unwrap();
 
-  const handleFundWallet = (amount: number): void => {
-    setWalletBalance((prev) => prev + amount);
-    setTransactions((prev) => [
-      {
-        id: `TXN-${Date.now()}`,
-        date: new Date().toISOString().split("T")[0],
-        description: "Wallet funding via Paystack",
-        type: "credit",
-        amount: amount,
-        status: "completed",
-        reference: `PSK-${Date.now()}`,
-      },
-      ...prev,
-    ]);
+      if (response.success && response.data.paymentUrl) {
+        // Redirect to payment gateway
+        window.location.href = response.data.paymentUrl;
+      } else {
+        throw new Error("Failed to initialize payment");
+      }
+    } catch (error: any) {
+      console.error("Payment initialization failed:", error);
+      alert(
+        error?.data?.message ||
+          "Failed to initialize payment. Please try again."
+      );
+    }
   };
 
-  const handleSubscribe = (
+  /**
+   * Handle subscription to a plan
+   */
+  const handleSubscribe = async (
     campaignType: string,
     planName: string,
     canAfford: boolean
-  ): void => {
+  ): Promise<void> => {
     if (!canAfford) {
-      const plan =
-        CAMPAIGN_TYPES[campaignType].plans[
-          planName as keyof (typeof CAMPAIGN_TYPES)[typeof campaignType]["plans"]
-        ];
-      setSelectedPlanForFunding({
-        campaignType,
-        planName,
-        shortfall: Math.max(0, plan.price - walletBalance),
-      });
-      setShowFundModal(true);
+      const plans = transformedPlans[campaignType as CampaignTypeId];
+      const plan = plans?.[planName];
+      if (plan) {
+        setSelectedPlanForFunding({
+          campaignType,
+          planName,
+          shortfall: Math.max(0, plan.price - walletBalance),
+        });
+        setShowFundModal(true);
+      }
       return;
     }
 
-    const plan =
-      CAMPAIGN_TYPES[campaignType].plans[
-        planName as keyof (typeof CAMPAIGN_TYPES)[typeof campaignType]["plans"]
-      ];
+    try {
+      const planTier = convertPlanNameToApiTier(planName);
+      await subscribeToPlan({ planTier }).unwrap();
 
-    setWalletBalance((prev) => prev - plan.price);
+      // Update local subscription state
+      setSubscriptions((prev) => ({
+        ...prev,
+        [campaignType]: {
+          planName: planName,
+          status: "active" as const,
+          startDate: new Date().toISOString().split("T")[0],
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+          autoRenew: true,
+        },
+      }));
 
-    setSubscriptions((prev) => ({
-      ...prev,
-      [campaignType]: {
-        planName: planName,
-        status: "active" as const,
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split("T")[0],
-        autoRenew: true,
-      },
-    }));
+      alert(`Successfully subscribed to ${planName} plan!`);
 
-    setTransactions((prev) => [
-      {
-        id: `TXN-${Date.now()}`,
-        date: new Date().toISOString().split("T")[0],
-        description: `${CAMPAIGN_TYPES[campaignType].label} - ${planName} Plan`,
-        type: "debit",
-        amount: plan.price,
-        status: "completed",
-        reference: `SUB-${campaignType.toUpperCase()}-${Date.now()}`,
-      },
-      ...prev,
-    ]);
-
-    alert(
-      `Successfully subscribed to ${planName} plan for ${CAMPAIGN_TYPES[campaignType].label}!`
-    );
+      // Refetch wallet data
+      await refetchBalance();
+      await refetchSummary();
+    } catch (error: any) {
+      console.error("Subscription error:", error);
+      const errorMessage =
+        error?.data?.message || "Subscription failed. Please try again.";
+      alert(errorMessage);
+    }
   };
 
   return {
@@ -158,8 +168,11 @@ export const useBilling = () => {
     subscriptions,
     usage,
     transactions,
+    transformedPlans,
     handleFundWallet,
     handleSubscribe,
+    isLoading: walletLoading || plansLoading,
+    isSubscribing,
+    isInitializingPayment,
   };
 };
-// ==================== hooks/useBilling.ts ====================

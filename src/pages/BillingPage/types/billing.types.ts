@@ -14,6 +14,8 @@ export interface Plan {
   userLimit: number;
   scheduleLimit: number | null;
   features: string[];
+  id?: string;
+  isActive?: boolean;
 }
 
 export interface CampaignType {
@@ -45,10 +47,11 @@ export interface Transaction {
   id: string;
   date: string;
   description: string;
-  type: "credit" | "debit";
+  type: "CREDIT" | "DEBIT";
   amount: number;
-  status: "completed" | "pending" | "failed";
-  reference: string;
+  status: "COMPLETED" | "PENDING" | "FAILED";
+  reference?: string;
+  createdAt: string;
 }
 
 export interface SelectedPlanForFunding {
@@ -67,3 +70,57 @@ export type CampaignTypeId =
 export type SubscriptionsState = Record<CampaignTypeId, Subscription | null>;
 export type UsageState = Record<CampaignTypeId, Usage>;
 
+// API Response Types
+export interface ApiPlanResponse {
+  id: string;
+  campaignType: string;
+  planTier: string;
+  monthlyPrice: number;
+  dailyLimit: number;
+  monthlyLimit: number;
+  userLimit: number;
+  scheduleLimit: number | null;
+  features: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WalletBalanceResponse {
+  success: boolean;
+  data: {
+    balance: number;
+    studentId: string;
+  };
+}
+
+export interface WalletSummaryResponse {
+  success: boolean;
+  data: {
+    balance: number;
+    totalCredited: number;
+    totalDebited: number;
+    pendingWithdrawals: number;
+    availableBalance: number;
+    recentTransactions: Transaction[];
+  };
+}
+
+export interface PaymentInitResponse {
+  success: boolean;
+  message: string;
+  data: {
+    channel: string;
+    fees: number;
+    currency: string;
+    amount: number;
+    reference: string;
+    status: string;
+    dateCreated: string;
+    paymentUrl: string;
+    customer: {
+      email: string;
+      phone: string;
+    };
+  };
+}
