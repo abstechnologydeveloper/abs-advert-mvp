@@ -1,4 +1,4 @@
-import  { useState } from "react";
+import { useState } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -10,6 +10,8 @@ import {
   Lightbulb,
   ChevronDown,
   ChevronUp,
+  Lock,
+  Phone,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -21,6 +23,74 @@ const CampaignGuidelinesPage = () => {
   };
 
   const guidelines = [
+    {
+      id: "privacy-policy",
+      title: "Privacy Policy",
+      icon: Lock,
+      color: "indigo",
+      content: {
+        description:
+          "Understanding how AbS protects user and partner data in compliance with the Nigeria Data Protection Regulation (NDPR).",
+        effectiveDate: "5th Nov., 2025",
+        sections: [
+          {
+            title: "Information We Collect",
+            items: [
+              "From users: Name, email, phone number, educational level and school, interaction data through analytics",
+              "From partners: Company name and contact details, campaign submissions, anonymized engagement metrics",
+            ],
+          },
+          {
+            title: "How We Use This Information",
+            items: [
+              "Deliver relevant ads and opportunities to appropriate audience segments",
+              "Enable partners to manage and monitor campaign performance",
+              "Improve targeting accuracy using analytics (always anonymized)",
+              "Communicate campaign updates and technical support",
+            ],
+          },
+          {
+            title: "Data Sharing and Access",
+            items: [
+              "AbS NEVER sells, rents, or discloses personally identifiable user information",
+              "Partners receive only aggregated and anonymized metrics",
+              "Internal access strictly limited to authorized AbS personnel",
+            ],
+          },
+          {
+            title: "Your Rights Under NDPR",
+            items: [
+              "Access a copy of your personal data",
+              "Correct inaccurate or incomplete data",
+              "Withdraw consent for promotional campaigns anytime",
+              "Easy unsubscribe links in every promotional email",
+            ],
+          },
+          {
+            title: "Data Security Measures",
+            items: [
+              "Encrypted cloud storage",
+              "Strict access control with user-level permissions",
+              "Regular security audits and compliance checks",
+              "72-hour breach notification protocol",
+            ],
+          },
+          {
+            title: "Data Retention",
+            items: [
+              "User data retained while account is active",
+              "Inactive accounts flagged after 24 months, deleted after 36 months",
+              "Analytics logs stored for 12 months, then anonymized or deleted",
+              "Deletion requests honored immediately",
+            ],
+          },
+        ],
+        dpo: {
+          email: "support@abstechconnect.com",
+          phone: ["09052728257", "09025252652"],
+        },
+      },
+    },
     {
       id: "voice-tone",
       title: "Voice & Tone Guidelines",
@@ -301,6 +371,7 @@ This opportunity is brought to you by [Partner Company] in collaboration with Ab
               purple: "bg-purple-50 border-purple-200 text-purple-700",
               red: "bg-red-50 border-red-200 text-red-700",
               yellow: "bg-yellow-50 border-yellow-200 text-yellow-700",
+              indigo: "bg-indigo-50 border-indigo-200 text-indigo-700",
             };
 
             return (
@@ -332,6 +403,61 @@ This opportunity is brought to you by [Partner Company] in collaboration with Ab
                   <div className="p-6 space-y-6">
                     {/* Description */}
                     <p className="text-gray-700 leading-relaxed">{guideline.content.description}</p>
+
+                    {/* Privacy Policy Content */}
+                    {guideline.id === "privacy-policy" && (
+                      <>
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+                          <p className="text-sm text-indigo-800">
+                            <strong>Effective Date:</strong> {guideline.content.effectiveDate} |{" "}
+                            <strong>Last Updated:</strong> {guideline.content.effectiveDate}
+                          </p>
+                        </div>
+
+                        <div className="space-y-6">
+                          {guideline.content.sections?.map((section, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-gray-50 rounded-lg p-5 border border-gray-200"
+                            >
+                              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-xs font-bold text-indigo-600">
+                                  {idx + 1}
+                                </div>
+                                {section.title}
+                              </h3>
+                              <ul className="space-y-2">
+                                {section.items.map((item, itemIdx) => (
+                                  <li key={itemIdx} className="text-sm text-gray-700 flex gap-2">
+                                    <span className="text-indigo-600 font-bold">•</span>
+                                    <span>{item}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="bg-indigo-900 text-white rounded-xl p-6 mt-6">
+                          <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+                            <Shield className="w-5 h-5" />
+                            Data Protection Officer Contact
+                          </h3>
+                          <div className="space-y-2 text-indigo-100">
+                            <p className="flex items-center gap-2">
+                              <Mail className="w-4 h-4" />
+                              <span className="text-sm">{guideline.content.dpo.email}</span>
+                            </p>
+                            <p className="flex items-center gap-2">
+                              <Phone className="w-4 h-4" />
+                              <span className="text-sm">
+                                {guideline.content.dpo.phone.join(" | ")}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     {/* Voice & Tone Content */}
                     {guideline.id === "voice-tone" && (
@@ -519,6 +645,8 @@ This opportunity is brought to you by [Partner Company] in collaboration with Ab
             Contact AbS Support
           </button>
         </div>
+
+       
       </div>
     </div>
   );
