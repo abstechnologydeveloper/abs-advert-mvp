@@ -54,11 +54,11 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
-              placeholder="10000"
-              min={10000}
+              placeholder="20000"
+              min={20000}
               className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
-            <p className="text-sm text-gray-500 mt-2">Minimum: ₦10,000</p>
+            <p className="text-sm text-gray-500 mt-2">Minimum: ₦20,000</p>
           </div>
 
           {/* Selected Plan Info */}
@@ -76,7 +76,7 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           {/* Proceed Button */}
           <button
             onClick={handleFund}
-            disabled={!amount || parseInt(amount, 10) < 10000}
+            disabled={!amount || parseInt(amount, 10) < 20000}
             className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             Proceed to Payment

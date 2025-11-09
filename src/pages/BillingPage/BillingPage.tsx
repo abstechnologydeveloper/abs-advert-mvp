@@ -55,7 +55,6 @@ const BillingPage: React.FC = () => {
         <WalletCard
           balance={walletBalance}
           onFund={() => setShowFundModal(true)}
-          onWithdraw={() => alert("Withdraw functionality coming soon")}
         />
 
         {/* Campaign Type Selector */}
@@ -76,23 +75,27 @@ const BillingPage: React.FC = () => {
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex space-x-4 mb-6 border-b border-gray-200">
-            {["overview", "plans", "history"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`pb-3 px-4 font-medium transition ${
-                  activeTab === tab
-                    ? "text-blue-600 border-b-2 border-blue-600"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+            {["overview", "plans", "history"]
+              .filter(
+                (tab) => tab !== "plans" || selectedCampaignType === "email"
+              )
+              .map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab as typeof activeTab)}
+                  className={`pb-3 px-4 font-medium transition ${
+                    activeTab === tab
+                      ? "text-blue-600 border-b-2 border-blue-600"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
           </div>
 
           {/* Tab Content */}
-          {activeTab === "plans" && (
+          {activeTab === "plans" && selectedCampaignType === "email" && (
             <PlansTab
               campaignType={selectedCampaignType}
               plans={transformedPlans[selectedCampaignType] || {}}
@@ -100,6 +103,12 @@ const BillingPage: React.FC = () => {
               currentSubscription={subscriptions[selectedCampaignType]}
               onSubscribe={handleSubscribe}
             />
+          )}
+
+          {activeTab === "plans" && selectedCampaignType !== "email" && (
+            <div className="text-center py-12 text-gray-600">
+              Plans are only available for <b>Email</b> Campaigns.
+            </div>
           )}
 
           {activeTab === "history" && selectedCampaignType === "email" ? (

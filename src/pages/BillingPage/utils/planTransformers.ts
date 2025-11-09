@@ -35,6 +35,7 @@ export function transformApiPlanToComponentPlan(
   };
 }
 
+
 /**
  * Transform API plan data to component-friendly format
  */
@@ -78,3 +79,4 @@ export function transformApiTransactions(
     status: txn.status,
   }));
 }
+

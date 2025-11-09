@@ -1,18 +1,16 @@
 // ==================== components/WalletCard.tsx ====================
 import React from "react";
-import { Plus, Download, Wallet } from "lucide-react";
+import { Plus, Wallet } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 
 interface WalletCardProps {
   balance: number;
   onFund: () => void;
-  onWithdraw: () => void;
 }
 
 const WalletCard: React.FC<WalletCardProps> = ({
   balance,
   onFund,
-  onWithdraw,
 }) => (
   <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-8 mb-8 text-white shadow-lg">
     <div className="flex items-center justify-between mb-6">
@@ -33,13 +31,7 @@ const WalletCard: React.FC<WalletCardProps> = ({
         <Plus className="w-5 h-5" />
         <span>Fund Wallet</span>
       </button>
-      <button
-        onClick={onWithdraw}
-        className="flex items-center space-x-2 px-6 py-3 bg-white/10 backdrop-blur-sm text-white rounded-xl hover:bg-white/20 transition font-medium border border-white/20"
-      >
-        <Download className="w-5 h-5" />
-        <span>Withdraw</span>
-      </button>
+     
     </div>
   </div>
 );

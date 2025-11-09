@@ -180,6 +180,12 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: CreditCard,
         },
         {
+          path: "email-plans",
+          label: "Email Plans",
+          icon: Mail,
+        },
+
+        {
           path: "settings",
           label: "Settings",
           icon: Settings,
