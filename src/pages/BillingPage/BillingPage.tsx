@@ -7,6 +7,7 @@ import PlansTab from "./components/PlansTab";
 import FundWalletModal from "./components/FundWalletModal";
 import TransactionHistory from "./components/TransactionHistory";
 import WalletCard from "./components/WalletCard";
+
 const BillingPage: React.FC = () => {
   const {
     selectedCampaignType,
@@ -16,7 +17,6 @@ const BillingPage: React.FC = () => {
     showFundModal,
     setShowFundModal,
     selectedPlanForFunding,
-    walletBalance,
     subscriptions,
     usage,
     transactions,
@@ -51,11 +51,8 @@ const BillingPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Wallet Card */}
-        <WalletCard
-          balance={walletBalance}
-          onFund={() => setShowFundModal(true)}
-        />
+        {/* Wallet Card - No longer needs balance prop */}
+        <WalletCard onFund={() => setShowFundModal(true)} />
 
         {/* Campaign Type Selector */}
         <CampaignTypeSelector
@@ -99,7 +96,7 @@ const BillingPage: React.FC = () => {
             <PlansTab
               campaignType={selectedCampaignType}
               plans={transformedPlans[selectedCampaignType] || {}}
-              walletBalance={walletBalance}
+              walletBalance={0} 
               currentSubscription={subscriptions[selectedCampaignType]}
               onSubscribe={handleSubscribe}
             />
