@@ -1,12 +1,13 @@
 // ==================== components/FundWalletModal.tsx ====================
 import React, { useState } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
+import { useInitializePaymentMutation } from "../../../redux/biling/billing-api";
+import { toast } from "react-hot-toast";
 
 interface FundWalletModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onFund: (amount: number) => void;
   selectedPlan?: {
     shortfall: number;
   };
@@ -15,18 +16,66 @@ interface FundWalletModalProps {
 const FundWalletModal: React.FC<FundWalletModalProps> = ({
   isOpen,
   onClose,
-  onFund,
   selectedPlan,
 }) => {
   const [amount, setAmount] = useState<string>("");
+  const [initializePayment, { isLoading }] = useInitializePaymentMutation();
 
   if (!isOpen) return null;
 
-  const handleFund = () => {
-    const parsedAmount = parseInt(amount, 10) || 0;
-    onFund(parsedAmount);
-    onClose();
-    setAmount("");
+  const handleFund = async () => {
+    const parsedAmount = parseInt(amount, 10);
+
+    if (!parsedAmount || parsedAmount < 20000) {
+      toast.error("Amount must be at least ₦20,000");
+      return;
+    }
+
+    try {
+      // Get the current URL origin for the callback
+      const callbackUrl = `${window.location.origin}/dashboard/billing?payment=callback`;
+
+      // Call the API to initialize payment
+      const response = await initializePayment({
+        amount: parsedAmount,
+        callback_url: callbackUrl, // Add callback URL to the request
+      }).unwrap();
+
+      if (response.success && response.data?.authorization_url) {
+        // Store transaction details if needed
+        const transactionData = {
+          reference: response.data.reference,
+          transactionId: response.data.transactionId,
+          amount: parsedAmount,
+          timestamp: new Date().toISOString(),
+        };
+
+        // Store in localStorage for verification after redirect
+        localStorage.setItem(
+          "pending_transaction",
+          JSON.stringify(transactionData)
+        );
+
+        // Redirect to Paystack checkout
+        window.location.href = response.data.authorization_url;
+      } else {
+        toast.error("Failed to initialize payment");
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error("Payment initialization error:", error);
+      toast.error(
+        error?.data?.message ||
+          "Failed to initialize payment. Please try again."
+      );
+    }
+  };
+
+  const handleClose = () => {
+    if (!isLoading) {
+      setAmount("");
+      onClose();
+    }
   };
 
   return (
@@ -36,8 +85,9 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-gray-900">Fund Your Wallet</h3>
           <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition"
+            onClick={handleClose}
+            disabled={isLoading}
+            className="p-2 hover:bg-gray-100 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
@@ -56,7 +106,8 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
               onChange={(e) => setAmount(e.target.value)}
               placeholder="20000"
               min={20000}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={isLoading}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
             />
             <p className="text-sm text-gray-500 mt-2">Minimum: ₦20,000</p>
           </div>
@@ -76,10 +127,17 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           {/* Proceed Button */}
           <button
             onClick={handleFund}
-            disabled={!amount || parseInt(amount, 10) < 20000}
-            className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+            disabled={!amount || parseInt(amount, 10) < 20000 || isLoading}
+            className="w-full py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
           >
-            Proceed to Payment
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Processing...</span>
+              </>
+            ) : (
+              <span>Proceed to Payment</span>
+            )}
           </button>
 
           {/* Footer Note */}

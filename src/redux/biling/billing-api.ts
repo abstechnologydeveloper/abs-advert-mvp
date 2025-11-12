@@ -26,7 +26,18 @@ export const billingServiceApis = api.injectEndpoints({
     }),
 
     // FUND WALLET (Initialize Payment)
-    initializePayment: builder.mutation<any, { amount: number }>({
+    initializePayment: builder.mutation<
+      {
+        success: boolean;
+        data?: {
+          authorization_url: string;
+          reference: string;
+          transactionId?: string;
+        };
+        message?: string;
+      },
+      { amount: number; callback_url: string }
+    >({
       query: (data) => ({
         url: `/ads/billing/wallet/fund`,
         method: "POST",

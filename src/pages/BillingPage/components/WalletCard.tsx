@@ -3,7 +3,7 @@ import React from "react";
 import { Plus, Wallet, RefreshCw } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 import { useGetWalletBalanceQuery } from "../../../redux/biling/billing-api";
-import type { FetchBaseQueryError } from "@reduxjs/toolkit/query"; 
+import type { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 
 interface WalletCardProps {
   onFund: () => void;
@@ -24,7 +24,8 @@ const WalletCard: React.FC<WalletCardProps> = ({ onFund }) => {
     isError,
     error,
     refetch,
-  } = useGetWalletBalanceQuery();
+  } = useGetWalletBalanceQuery(undefined);
+
   const balance = walletData?.data?.balance ?? walletData?.balance ?? 0;
 
   return (

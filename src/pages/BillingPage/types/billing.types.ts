@@ -106,21 +106,14 @@ export interface WalletSummaryResponse {
   };
 }
 
+// Updated to match your actual API response
 export interface PaymentInitResponse {
   success: boolean;
   message: string;
   data: {
-    channel: string;
-    fees: number;
-    currency: string;
-    amount: number;
+    authorization_url: string;
+    access_code: string;
     reference: string;
-    status: string;
-    dateCreated: string;
-    paymentUrl: string;
-    customer: {
-      email: string;
-      phone: string;
-    };
+    transactionId: string;
   };
 }
