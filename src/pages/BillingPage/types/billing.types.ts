@@ -18,6 +18,28 @@ export interface Plan {
   isActive?: boolean;
 }
 
+export interface ActiveSubscription {
+  id: string;
+  campaignType: string;
+  planName: string;
+  status: string;
+  monthlyPrice: number;
+  dailyLimit: number;
+  monthlyLimit: number;
+  userLimit: number;
+  scheduleLimit: number;
+  startDate: string;
+  endDate: string;
+  nextRenewalDate: string;
+  autoRenew: boolean;
+  planConfig: {
+    features: string[];
+  };
+  todayUsage: {
+    emailsSent: number;
+  } | null;
+}
+
 export interface CampaignType {
   id: string;
   label: string;

@@ -1,13 +1,28 @@
+// ==================== Updated PlansTab.tsx ====================
 import React from "react";
 import { Info } from "lucide-react";
 import PlanCard from "./PlanCard";
 import { Plan, Subscription } from "../types/billing.types";
+
+interface ActiveSubscription {
+  id: string;
+  campaignType: string;
+  planName: string;
+  status: string;
+  monthlyPrice: number;
+  dailyLimit: number;
+  monthlyLimit: number;
+  startDate: string;
+  endDate: string;
+  autoRenew: boolean;
+}
 
 interface PlansTabProps {
   campaignType: string;
   plans: Record<string, Plan>;
   walletBalance: number;
   currentSubscription: Subscription | null;
+  activeSubscriptions: ActiveSubscription[];
   onSubscribe: (
     campaignType: string,
     planName: string,
@@ -20,9 +35,9 @@ const PlansTab: React.FC<PlansTabProps> = ({
   plans,
   walletBalance,
   currentSubscription,
+  activeSubscriptions,
   onSubscribe,
 }) => {
-  // 🛑 If the campaign type is NOT email, don't show any plans
   if (campaignType.toUpperCase() !== "EMAIL") {
     return (
       <div className="text-center py-12">
@@ -33,7 +48,6 @@ const PlansTab: React.FC<PlansTabProps> = ({
     );
   }
 
-  // 🪫 If no plans are available
   if (!plans || Object.keys(plans).length === 0) {
     return (
       <div className="text-center py-12">
@@ -43,6 +57,13 @@ const PlansTab: React.FC<PlansTabProps> = ({
       </div>
     );
   }
+
+  // Find active subscription for this campaign type
+  const activeSub = activeSubscriptions.find(
+    (sub) =>
+      sub.campaignType.toUpperCase() === campaignType.toUpperCase() &&
+      sub.status === "ACTIVE"
+  );
 
   return (
     <div className="space-y-6">
@@ -59,23 +80,31 @@ const PlansTab: React.FC<PlansTabProps> = ({
           </p>
         </div>
       </div>
+      {currentSubscription && (
+        <div className="text-sm text-gray-700 mb-4">
+          You are currently subscribed to <b>{currentSubscription.planName}</b>{" "}
+          plan.
+        </div>
+      )}
 
       {/* Plans Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {Object.entries(plans).map(([planName, plan]) => (
-          <PlanCard
-            key={planName}
-            campaignType={campaignType}
-            planName={planName}
-            plan={plan}
-            isCurrentPlan={
-              currentSubscription?.planName === planName &&
-              currentSubscription?.status === "active"
-            }
-            walletBalance={walletBalance}
-            onSubscribe={onSubscribe}
-          />
-        ))}
+        {Object.entries(plans).map(([planName, plan]) => {
+          const isCurrentPlan =
+            activeSub?.planName?.toUpperCase() === planName.toUpperCase();
+
+          return (
+            <PlanCard
+              key={planName}
+              campaignType={campaignType}
+              planName={planName}
+              plan={plan}
+              isCurrentPlan={isCurrentPlan}
+              walletBalance={walletBalance}
+              onSubscribe={onSubscribe}
+            />
+          );
+        })}
       </div>
     </div>
   );

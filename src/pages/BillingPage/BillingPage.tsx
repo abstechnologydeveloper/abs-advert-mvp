@@ -1,12 +1,16 @@
-// ==================== Main Page Component Example ====================
+// ==================== Updated BillingPage.tsx ====================
 import React from "react";
 import { useBilling } from "./hooks/useBilling";
 import CampaignTypeSelector from "./components/CampaignTypeSelector";
-import SubscriptionOverview from "./components/SubscriptionOverview";
 import PlansTab from "./components/PlansTab";
 import FundWalletModal from "./components/FundWalletModal";
 import TransactionHistory from "./components/TransactionHistory";
 import WalletCard from "./components/WalletCard";
+import ActiveSubscriptionTab from "./components/ActiveSubscriptionTab";
+import {
+  useGetWalletBalanceQuery,
+  useGetActiveSubscriptionsQuery,
+} from "../../redux/biling/billing-api";
 
 const BillingPage: React.FC = () => {
   const {
@@ -18,16 +22,24 @@ const BillingPage: React.FC = () => {
     setShowFundModal,
     selectedPlanForFunding,
     subscriptions,
-    usage,
     transactions,
     transformedPlans,
-    handleFundWallet,
     handleSubscribe,
     isLoading,
     isSubscribing,
   } = useBilling();
 
-  if (isLoading) {
+  // Fetch wallet balance
+  const { data: walletData } = useGetWalletBalanceQuery(undefined);
+  const walletBalance = walletData?.data?.balance ?? walletData?.balance ?? 0;
+
+  // Fetch active subscriptions
+  const { data: activeSubscriptionsData, isLoading: isLoadingSubscriptions } =
+    useGetActiveSubscriptionsQuery(undefined);
+
+  const activeSubscriptions = activeSubscriptionsData?.data || [];
+
+  if (isLoading || isLoadingSubscriptions) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -51,7 +63,7 @@ const BillingPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Wallet Card - No longer needs balance prop */}
+        {/* Wallet Card */}
         <WalletCard onFund={() => setShowFundModal(true)} />
 
         {/* Campaign Type Selector */}
@@ -61,14 +73,7 @@ const BillingPage: React.FC = () => {
           subscriptions={subscriptions}
         />
 
-        {/* Subscription Overview */}
-        <SubscriptionOverview
-          campaignType={selectedCampaignType}
-          subscription={subscriptions[selectedCampaignType]}
-          usage={usage[selectedCampaignType]}
-          onUpgrade={() => setActiveTab("plans")}
-        />
-
+    
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex space-x-4 mb-6 border-b border-gray-200">
@@ -96,8 +101,9 @@ const BillingPage: React.FC = () => {
             <PlansTab
               campaignType={selectedCampaignType}
               plans={transformedPlans[selectedCampaignType] || {}}
-              walletBalance={0} 
+              walletBalance={walletBalance}
               currentSubscription={subscriptions[selectedCampaignType]}
+              activeSubscriptions={activeSubscriptions}
               onSubscribe={handleSubscribe}
             />
           )}
@@ -113,22 +119,21 @@ const BillingPage: React.FC = () => {
           ) : (
             activeTab === "history" && (
               <div className="text-center py-12 text-gray-600">
-                Transaction history is only available for <b>Email </b>
+                Transaction history is only available for <b>Email</b>{" "}
                 Campaigns.
               </div>
             )
           )}
+
           {activeTab === "overview" && selectedCampaignType === "email" ? (
-            <div className="text-center py-12">
-              <p className="text-gray-600">
-                Overview content will be displayed here
-              </p>
-            </div>
+            <ActiveSubscriptionTab
+              activeSubscriptions={activeSubscriptions}
+              campaignType={selectedCampaignType}
+            />
           ) : (
             activeTab === "overview" && (
               <div className="text-center py-12 text-gray-600">
-                Overview only available for <b>Email </b>
-                Campaigns.
+                Overview only available for <b>Email</b> Campaigns.
               </div>
             )
           )}
@@ -137,10 +142,7 @@ const BillingPage: React.FC = () => {
         {/* Fund Wallet Modal */}
         <FundWalletModal
           isOpen={showFundModal}
-          onClose={() => {
-            setShowFundModal(false);
-          }}
-          onFund={handleFundWallet}
+          onClose={() => setShowFundModal(false)}
           selectedPlan={selectedPlanForFunding}
         />
 

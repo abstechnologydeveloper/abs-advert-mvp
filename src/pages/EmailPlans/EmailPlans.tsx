@@ -1,23 +1,40 @@
+// ==================== Updated EmailPlans.tsx ====================
 import React from "react";
 import { useBilling } from "../BillingPage/hooks/useBilling";
 import WalletCard from "../BillingPage/components/WalletCard";
 import PlansTab from "../BillingPage/components/PlansTab";
 import FundWalletModal from "../BillingPage/components/FundWalletModal";
+import {
+  useGetWalletBalanceQuery,
+  useGetActiveSubscriptionsQuery,
+} from "../../redux/biling/billing-api";
+
 const EmailPlans: React.FC = () => {
   const {
     showFundModal,
     setShowFundModal,
     selectedPlanForFunding,
-    walletBalance,
     subscriptions,
     transformedPlans,
-    handleFundWallet,
     handleSubscribe,
     isLoading,
     isSubscribing,
   } = useBilling();
 
-  if (isLoading) {
+  // Fetch wallet balance
+  const { data: walletData } = useGetWalletBalanceQuery(undefined);
+  const walletBalance = walletData?.data?.balance ?? walletData?.balance ?? 0;
+
+  // Fetch active subscriptions
+  const { data: activeSubscriptionsData, isLoading: isLoadingSubscriptions } =
+    useGetActiveSubscriptionsQuery(undefined);
+
+  const activeSubscriptions = activeSubscriptionsData?.data || [];
+
+  // Email campaign type
+  const campaignType = "email";
+
+  if (isLoading || isLoadingSubscriptions) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -42,18 +59,16 @@ const EmailPlans: React.FC = () => {
         </div>
 
         {/* Wallet Card */}
-        <WalletCard
-          balance={walletBalance}
-          onFund={() => setShowFundModal(true)}
-        />
+        <WalletCard onFund={() => setShowFundModal(true)} />
 
         {/* Plans Section */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
           <PlansTab
-            campaignType="email"
-            plans={transformedPlans["email"] || {}}
+            campaignType={campaignType}
+            plans={transformedPlans[campaignType] || {}}
             walletBalance={walletBalance}
-            currentSubscription={subscriptions["email"]}
+            currentSubscription={subscriptions[campaignType]}
+            activeSubscriptions={activeSubscriptions}
             onSubscribe={handleSubscribe}
           />
         </div>
@@ -61,10 +76,7 @@ const EmailPlans: React.FC = () => {
         {/* Fund Wallet Modal */}
         <FundWalletModal
           isOpen={showFundModal}
-          onClose={() => {
-            setShowFundModal(false);
-          }}
-          onFund={handleFundWallet}
+          onClose={() => setShowFundModal(false)}
           selectedPlan={selectedPlanForFunding}
         />
 

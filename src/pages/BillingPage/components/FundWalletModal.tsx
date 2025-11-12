@@ -1,9 +1,10 @@
 // ==================== components/FundWalletModal.tsx ====================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 import { useInitializePaymentMutation } from "../../../redux/biling/billing-api";
 import { toast } from "react-hot-toast";
+import { useNavigate, useLocation } from "react-router-dom";
 
 interface FundWalletModalProps {
   isOpen: boolean;
@@ -20,6 +21,25 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
 }) => {
   const [amount, setAmount] = useState<string>("");
   const [initializePayment, { isLoading }] = useInitializePaymentMutation();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const isCallback = params.get("payment") === "callback";
+
+    if (isCallback) {
+      const transactionData = localStorage.getItem("pending_transaction");
+
+      if (transactionData) {
+        const parsed = JSON.parse(transactionData);
+        console.log("Parsed Transaction:", parsed);
+        toast.success("Payment successful! 🎉 Wallet funded.");
+        localStorage.removeItem("pending_transaction");
+        navigate("/dashboard/billing", { replace: true });
+      }
+    }
+  }, [location, navigate]);
 
   if (!isOpen) return null;
 
@@ -32,17 +52,13 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
     }
 
     try {
-      // Get the current URL origin for the callback
       const callbackUrl = `${window.location.origin}/dashboard/billing?payment=callback`;
-
-      // Call the API to initialize payment
       const response = await initializePayment({
         amount: parsedAmount,
-        callback_url: callbackUrl, // Add callback URL to the request
+        callback_url: callbackUrl,
       }).unwrap();
 
       if (response.success && response.data?.authorization_url) {
-        // Store transaction details if needed
         const transactionData = {
           reference: response.data.reference,
           transactionId: response.data.transactionId,
@@ -50,13 +66,10 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           timestamp: new Date().toISOString(),
         };
 
-        // Store in localStorage for verification after redirect
         localStorage.setItem(
           "pending_transaction",
           JSON.stringify(transactionData)
         );
-
-        // Redirect to Paystack checkout
         window.location.href = response.data.authorization_url;
       } else {
         toast.error("Failed to initialize payment");
