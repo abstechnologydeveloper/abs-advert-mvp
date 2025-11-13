@@ -5,7 +5,6 @@ import { formatCurrency, getPlanIcon } from "../utils/formatters";
 import { useChangePlanMutation } from "../../../redux/biling/billing-api";
 import { Plan } from "../types/billing.types";
 
-
 interface ChangePlanModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -32,14 +31,17 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
     if (!selectedPlan) return;
 
     try {
+      // Convert plan name to uppercase format (BASIC, GROWTH, PRO, ENTERPRISE)
+      const planTierUppercase = selectedPlan.toUpperCase();
+
       await changePlan({
         subscriptionId: currentSubscriptionId,
-        newPlanTier: selectedPlan,
+        newPlanTier: planTierUppercase,
       }).unwrap();
 
       alert(`Successfully changed to ${selectedPlan} plan`);
       onClose();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       alert(error?.data?.message || "Failed to change plan");
     }
@@ -78,6 +80,9 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
             <p className="text-sm text-blue-900">
               <span className="font-semibold">Wallet Balance:</span>{" "}
               {formatCurrency(walletBalance)}
+            </p>
+            <p className="text-xs text-blue-700 mt-1">
+              Plan change fee will be deducted from your wallet
             </p>
           </div>
         </div>
@@ -181,6 +186,12 @@ const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
                 <span className="text-gray-600">Amount to be charged:</span>
                 <span className="font-bold text-gray-900">
                   {formatCurrency(selectedPlanData.price)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm mt-2">
+                <span className="text-gray-600">Remaining balance:</span>
+                <span className="font-semibold text-gray-900">
+                  {formatCurrency(walletBalance - selectedPlanData.price)}
                 </span>
               </div>
             </div>

@@ -62,7 +62,6 @@ export const useBilling = () => {
     ? transformApiTransactions(walletSummaryData.data.recentTransactions)
     : [];
 
-
   // Mock subscriptions and usage (replace with actual API when available)
   const [subscriptions, setSubscriptions] = useState<SubscriptionsState>({
     email: null,
@@ -72,7 +71,7 @@ export const useBilling = () => {
     library: null,
   });
 
-  const [usage, setUsage] = useState<UsageState>({
+  const [usage] = useState<UsageState>({
     email: { dailySent: 0, monthlySent: 0 },
     quills: { dailySent: 0, monthlySent: 0 },
     blog: { dailySent: 0, monthlySent: 0 },
@@ -85,11 +84,17 @@ export const useBilling = () => {
    */
   const handleFundWallet = async (amount: number): Promise<void> => {
     try {
-      const response = await initializePayment({ amount }).unwrap();
+      // Get current URL and create callback URL
+      const callbackUrl = `${window.location.origin}/billing/payment-callback`;
 
-      if (response.success && response.data.paymentUrl) {
+      const response = await initializePayment({
+        amount,
+        callback_url: callbackUrl,
+      }).unwrap();
+
+      if (response.success && response.data?.authorization_url) {
         // Redirect to payment gateway
-        window.location.href = response.data.paymentUrl;
+        window.location.href = response.data.authorization_url;
       } else {
         throw new Error("Failed to initialize payment");
       }

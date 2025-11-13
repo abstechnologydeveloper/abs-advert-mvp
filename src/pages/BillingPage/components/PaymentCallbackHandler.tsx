@@ -44,29 +44,15 @@ const PaymentCallbackHandler: React.FC<PaymentCallbackHandlerProps> = ({
 
         if (pendingTransaction) {
           const transactionData = JSON.parse(pendingTransaction);
-
-          // Here you would typically call your backend to verify the payment
-          // Example:
-          // const verifyResponse = await verifyPaymentAPI({ reference: paymentReference });
-
-          // For now, we'll simulate a successful verification
-          // Replace this with your actual API call
-
           setStatus("success");
           setMessage(
             `Payment of ₦${transactionData.amount.toLocaleString()} successful!`
           );
           toast.success("Payment successful! Your wallet has been funded.");
-
-          // Clean up localStorage
           localStorage.removeItem("pending_transaction");
-
-          // Call callback if provided
           if (onVerificationComplete) {
             onVerificationComplete();
           }
-
-          // Redirect to billing page after 3 seconds
           setTimeout(() => {
             navigate("/dashboard/billing");
           }, 3000);
@@ -90,14 +76,10 @@ const PaymentCallbackHandler: React.FC<PaymentCallbackHandlerProps> = ({
         }, 3000);
       }
     };
-
-    // Check if this is a payment callback
     if (searchParams.get("payment") === "callback") {
       verifyPayment();
     }
   }, [searchParams, navigate, onVerificationComplete]);
-
-  // Don't render if not a payment callback
   if (searchParams.get("payment") !== "callback") {
     return null;
   }

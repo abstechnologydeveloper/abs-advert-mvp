@@ -180,8 +180,8 @@ const Sidebar: React.FC<SidebarProps> = ({
           icon: CreditCard,
         },
         {
-          path: "email-plans",
-          label: "Email Plans",
+          path: "subscription-plans",
+          label: "Subscription Plans",
           icon: Mail,
         },
 

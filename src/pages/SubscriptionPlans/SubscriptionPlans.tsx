@@ -9,7 +9,7 @@ import {
   useGetActiveSubscriptionsQuery,
 } from "../../redux/biling/billing-api";
 
-const EmailPlans: React.FC = () => {
+const SubscriptionPLans: React.FC = () => {
   const {
     showFundModal,
     setShowFundModal,
@@ -51,10 +51,10 @@ const EmailPlans: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Email Campaign Plans
+            Subscription Plans
           </h1>
           <p className="text-gray-600">
-            Choose the perfect plan for your email campaigns
+            Choose the perfect plan for your campaigns
           </p>
         </div>
 
@@ -96,4 +96,4 @@ const EmailPlans: React.FC = () => {
   );
 };
 
-export default EmailPlans;
+export default SubscriptionPLans;

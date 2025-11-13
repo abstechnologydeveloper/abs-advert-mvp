@@ -17,7 +17,7 @@ import CampaignGuidelinesPage from "./pages/CampaignGuidelinesPage/CampaignGuide
 import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCampaignsPage";
 import BillingPage from "./pages/BillingPage/BillingPage";
 import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
-import EmailPlans from "./pages/EmailPlans/EmailPlans";
+import SubscriptionPLans from "./pages/SubscriptionPlans/SubscriptionPlans";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -164,7 +164,7 @@ const App: React.FC = () => {
           />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
-          <Route path="email-plans" element={<EmailPlans />} />
+          <Route path="subscription-plans" element={<SubscriptionPLans />} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="overview" replace />} />
