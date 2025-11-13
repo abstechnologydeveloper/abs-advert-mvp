@@ -1,5 +1,5 @@
 // ==================== Updated BillingPage.tsx ====================
-import React from "react";
+import React, { useState } from "react";
 import { useBilling } from "./hooks/useBilling";
 import CampaignTypeSelector from "./components/CampaignTypeSelector";
 import PlansTab from "./components/PlansTab";
@@ -7,6 +7,7 @@ import FundWalletModal from "./components/FundWalletModal";
 import TransactionHistory from "./components/TransactionHistory";
 import WalletCard from "./components/WalletCard";
 import ActiveSubscriptionTab from "./components/ActiveSubscriptionTab";
+import ChangePlanModal from "./components/ChangePlanModal";
 import {
   useGetWalletBalanceQuery,
   useGetActiveSubscriptionsQuery,
@@ -29,6 +30,11 @@ const BillingPage: React.FC = () => {
     isSubscribing,
   } = useBilling();
 
+  // Change Plan Modal State
+  const [showChangePlanModal, setShowChangePlanModal] = useState(false);
+  const [selectedSubscriptionId, setSelectedSubscriptionId] =
+    useState<string>("");
+
   // Fetch wallet balance
   const { data: walletData } = useGetWalletBalanceQuery(undefined);
   const walletBalance = walletData?.data?.balance ?? walletData?.balance ?? 0;
@@ -38,6 +44,16 @@ const BillingPage: React.FC = () => {
     useGetActiveSubscriptionsQuery(undefined);
 
   const activeSubscriptions = activeSubscriptionsData?.data || [];
+
+  // Find current subscription for change plan modal
+  const currentSubscription = activeSubscriptions.find(
+    (sub) => sub.id === selectedSubscriptionId
+  );
+
+  const handleChangePlanClick = (subscriptionId: string) => {
+    setSelectedSubscriptionId(subscriptionId);
+    setShowChangePlanModal(true);
+  };
 
   if (isLoading || isLoadingSubscriptions) {
     return (
@@ -73,7 +89,6 @@ const BillingPage: React.FC = () => {
           subscriptions={subscriptions}
         />
 
-    
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex space-x-4 mb-6 border-b border-gray-200">
@@ -129,6 +144,7 @@ const BillingPage: React.FC = () => {
             <ActiveSubscriptionTab
               activeSubscriptions={activeSubscriptions}
               campaignType={selectedCampaignType}
+              onChangePlan={handleChangePlanClick}
             />
           ) : (
             activeTab === "overview" && (
@@ -145,6 +161,18 @@ const BillingPage: React.FC = () => {
           onClose={() => setShowFundModal(false)}
           selectedPlan={selectedPlanForFunding}
         />
+
+        {/* Change Plan Modal */}
+        {currentSubscription && (
+          <ChangePlanModal
+            isOpen={showChangePlanModal}
+            onClose={() => setShowChangePlanModal(false)}
+            currentSubscriptionId={currentSubscription.id}
+            currentPlanName={currentSubscription.planName}
+            availablePlans={transformedPlans[selectedCampaignType] || {}}
+            walletBalance={walletBalance}
+          />
+        )}
 
         {/* Loading Overlay */}
         {isSubscribing && (

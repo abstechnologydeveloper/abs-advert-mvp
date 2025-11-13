@@ -128,7 +128,6 @@ export interface WalletSummaryResponse {
   };
 }
 
-// Updated to match your actual API response
 export interface PaymentInitResponse {
   success: boolean;
   message: string;

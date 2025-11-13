@@ -1,23 +1,112 @@
-// ==================== ActiveSubscriptionTab.tsx Component ====================
-import React from "react";
-import { Calendar, Mail, Users, Clock, RefreshCw, Shield } from "lucide-react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// ==================== Enhanced ActiveSubscriptionTab.tsx ====================
+import React, { useState } from "react";
+import {
+  Calendar,
+  Mail,
+  Users,
+  Clock,
+  RefreshCw,
+  Shield,
+  XCircle,
+  Edit,
+  AlertCircle,
+  TrendingUp,
+} from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 import { ActiveSubscription } from "../types/billing.types";
+import {
+  useCancelSubscriptionByIdMutation,
+  useToggleAutoRenewMutation,
+  useRenewSubscriptionMutation,
+  useGetSubscriptionUsageQuery,
+  useCheckSubscriptionLimitQuery,
+} from "../../../redux/biling/billing-api";
 
 interface ActiveSubscriptionTabProps {
   activeSubscriptions: ActiveSubscription[];
   campaignType: string;
+  onChangePlan?: (subscriptionId: string) => void;
 }
 
 const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   activeSubscriptions,
   campaignType,
+  onChangePlan,
 }) => {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const subscription = activeSubscriptions.find(
     (sub) =>
       sub.campaignType.toUpperCase() === campaignType.toUpperCase() &&
       sub.status === "ACTIVE"
   );
+
+  // RTK Query Hooks
+  const [cancelSubscription] = useCancelSubscriptionByIdMutation();
+  const [toggleAutoRenew] = useToggleAutoRenewMutation();
+  const [renewSubscription] = useRenewSubscriptionMutation();
+
+  const { data: usageData } = useGetSubscriptionUsageQuery(
+    subscription?.id || "",
+    { skip: !subscription?.id }
+  );
+
+  const { data: limitData } = useCheckSubscriptionLimitQuery(
+    subscription?.id || "",
+    { skip: !subscription?.id }
+  );
+
+  // Handle Cancel Subscription
+  const handleCancelSubscription = async () => {
+    if (!subscription) return;
+
+    setActionLoading("cancel");
+    try {
+      await cancelSubscription(subscription.id).unwrap();
+      alert("Subscription cancelled successfully");
+      setShowCancelConfirm(false);
+    } catch (error: any) {
+      alert(error?.data?.message || "Failed to cancel subscription");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle Toggle Auto-Renew
+  const handleToggleAutoRenew = async () => {
+    if (!subscription) return;
+
+    setActionLoading("autorenew");
+    try {
+      await toggleAutoRenew(subscription.id).unwrap();
+      alert(
+        `Auto-renewal ${
+          subscription.autoRenew ? "disabled" : "enabled"
+        } successfully`
+      );
+    } catch (error: any) {
+      alert(error?.data?.message || "Failed to toggle auto-renewal");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  // Handle Renew Subscription
+  const handleRenewSubscription = async () => {
+    if (!subscription) return;
+
+    setActionLoading("renew");
+    try {
+      await renewSubscription(subscription.id).unwrap();
+      alert("Subscription renewed successfully");
+    } catch (error: any) {
+      alert(error?.data?.message || "Failed to renew subscription");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   if (!subscription) {
     return (
@@ -47,6 +136,13 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
 
   const todayUsage = subscription.todayUsage?.emailsSent || 0;
   const dailyUsagePercent = (todayUsage / subscription.dailyLimit) * 100;
+
+  // Parse usage data
+  const currentUsage =
+    usageData?.data?.currentUsage || usageData?.currentUsage || 0;
+  const remainingLimit =
+    limitData?.data?.remaining || limitData?.remaining || 0;
+  const canSendMore = limitData?.data?.canSend || limitData?.canSend || true;
 
   return (
     <div className="space-y-6">
@@ -96,6 +192,63 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
         </div>
       </div>
 
+      {/* Action Buttons */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <button
+          onClick={handleToggleAutoRenew}
+          disabled={actionLoading === "autorenew"}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition font-medium text-gray-700 hover:text-blue-600 disabled:opacity-50"
+        >
+          <RefreshCw className="w-4 h-4" />
+          {actionLoading === "autorenew"
+            ? "Processing..."
+            : subscription.autoRenew
+            ? "Disable Auto-Renew"
+            : "Enable Auto-Renew"}
+        </button>
+
+        <button
+          onClick={handleRenewSubscription}
+          disabled={actionLoading === "renew"}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition font-medium text-gray-700 hover:text-green-600 disabled:opacity-50"
+        >
+          <TrendingUp className="w-4 h-4" />
+          {actionLoading === "renew" ? "Processing..." : "Renew Now"}
+        </button>
+
+        <button
+          onClick={() => onChangePlan?.(subscription.id)}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition font-medium text-gray-700 hover:text-purple-600"
+        >
+          <Edit className="w-4 h-4" />
+          Change Plan
+        </button>
+
+        <button
+          onClick={() => setShowCancelConfirm(true)}
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-red-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition font-medium text-red-600 hover:text-red-700"
+        >
+          <XCircle className="w-4 h-4" />
+          Cancel Plan
+        </button>
+      </div>
+
+      {/* Limit Check Warning */}
+      {!canSendMore && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-medium text-red-900 mb-1">
+              Limit Reached
+            </p>
+            <p className="text-sm text-red-700">
+              You've reached your subscription limit. Consider upgrading your
+              plan.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Usage Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Daily Usage */}
@@ -130,18 +283,25 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
           </div>
         </div>
 
-        {/* Monthly Limit */}
+        {/* Monthly Usage (from API) */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-gray-600">
-              Monthly Limit
+              Current Usage
             </span>
             <Calendar className="w-5 h-5 text-green-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-2">
-            {subscription.monthlyLimit.toLocaleString()}
+            {currentUsage.toLocaleString()}
           </p>
-          <p className="text-sm text-gray-600">emails per month</p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Remaining</span>
+              <span className="font-medium text-gray-900">
+                {remainingLimit.toLocaleString()}
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* User Limit */}
@@ -230,6 +390,42 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">
+                Cancel Subscription
+              </h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to cancel your {subscription.planName}{" "}
+              subscription? You'll lose access to premium features at the end of
+              your billing period.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                className="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition font-medium"
+              >
+                Keep Subscription
+              </button>
+              <button
+                onClick={handleCancelSubscription}
+                disabled={actionLoading === "cancel"}
+                className="flex-1 px-4 py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 transition font-medium disabled:opacity-50"
+              >
+                {actionLoading === "cancel" ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
