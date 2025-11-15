@@ -70,7 +70,15 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           "pending_transaction",
           JSON.stringify(transactionData)
         );
-        window.location.href = response.data.authorization_url;
+
+        // Open payment page in new tab
+        window.open(response.data.authorization_url, "_blank");
+
+        // Optional: Show toast notification
+        toast.success("Payment page opened in new tab");
+
+        // Close modal after opening payment page
+        handleClose();
       } else {
         toast.error("Failed to initialize payment");
       }

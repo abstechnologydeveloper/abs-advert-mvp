@@ -36,6 +36,11 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
 }) => {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: "success" | "error";
+  }>({ show: false, message: "", type: "success" });
 
   const subscription = activeSubscriptions.find(
     (sub) =>
@@ -58,6 +63,19 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     { skip: !subscription?.id }
   );
 
+  // Show toast notification
+  const showToast = (message: string, type: "success" | "error") => {
+    // Shorten long messages
+    const shortMessage =
+      message.length > 60 ? message.substring(0, 57) + "..." : message;
+
+    setToast({ show: true, message: shortMessage, type });
+    setTimeout(
+      () => setToast({ show: false, message: "", type: "success" }),
+      4000
+    );
+  };
+
   // Handle Cancel Subscription
   const handleCancelSubscription = async () => {
     if (!subscription) return;
@@ -65,10 +83,13 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("cancel");
     try {
       await cancelSubscription(subscription.id).unwrap();
-      alert("Subscription cancelled successfully");
+      showToast("Subscription cancelled successfully", "success");
       setShowCancelConfirm(false);
     } catch (error: any) {
-      alert(error?.data?.message || "Failed to cancel subscription");
+      showToast(
+        error?.data?.message || "Failed to cancel subscription",
+        "error"
+      );
     } finally {
       setActionLoading(null);
     }
@@ -81,13 +102,17 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("autorenew");
     try {
       await toggleAutoRenew(subscription.id).unwrap();
-      alert(
+      showToast(
         `Auto-renewal ${
           subscription.autoRenew ? "disabled" : "enabled"
-        } successfully`
+        } successfully`,
+        "success"
       );
     } catch (error: any) {
-      alert(error?.data?.message || "Failed to toggle auto-renewal");
+      showToast(
+        error?.data?.message || "Failed to toggle auto-renewal",
+        "error"
+      );
     } finally {
       setActionLoading(null);
     }
@@ -100,9 +125,12 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("renew");
     try {
       await renewSubscription(subscription.id).unwrap();
-      alert("Subscription renewed successfully");
+      showToast("Subscription renewed successfully", "success");
     } catch (error: any) {
-      alert(error?.data?.message || "Failed to renew subscription");
+      showToast(
+        error?.data?.message || "Failed to renew subscription",
+        "error"
+      );
     } finally {
       setActionLoading(null);
     }
@@ -134,15 +162,26 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     );
   }
 
-  const todayUsage = subscription.todayUsage?.emailsSent || 0;
+  // Daily Usage
+  const todayUsage = subscription.todayUsage?.dailySent || 0;
   const dailyUsagePercent = (todayUsage / subscription.dailyLimit) * 100;
 
-  // Parse usage data
-  const currentUsage =
-    usageData?.data?.currentUsage || usageData?.currentUsage || 0;
-  const remainingLimit =
-    limitData?.data?.remaining || limitData?.remaining || 0;
-  const canSendMore = limitData?.data?.canSend || limitData?.canSend || true;
+  // Monthly Usage
+  const monthlyUsage = subscription.todayUsage?.monthlySent || 0;
+  const monthlyUsagePercent = (monthlyUsage / subscription.monthlyLimit) * 100;
+
+  // Parse usage data from API
+  const currentCycleUsage = usageData?.data?.currentCycle?.sent || 0;
+  const currentCycleLimit =
+    usageData?.data?.currentCycle?.limit || subscription.monthlyLimit;
+  const currentCycleRemaining =
+    usageData?.data?.currentCycle?.remaining || subscription.monthlyLimit;
+  const currentCyclePercent = usageData?.data?.currentCycle?.percentage || 0;
+
+  // Parse limit check data
+  const dailyRemaining = limitData?.data?.dailyRemaining || 0;
+  const monthlyRemaining = limitData?.data?.monthlyRemaining || 0;
+  const canSendMore = limitData?.data?.allowed !== false;
 
   return (
     <div className="space-y-6">
@@ -269,6 +308,12 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
                 {subscription.dailyLimit.toLocaleString()}
               </span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Remaining Today</span>
+              <span className="font-medium text-green-600">
+                {dailyRemaining.toLocaleString()}
+              </span>
+            </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all ${
@@ -283,24 +328,79 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
           </div>
         </div>
 
-        {/* Monthly Usage (from API) */}
+        {/* Monthly Usage */}
         <div className="bg-white border border-gray-200 rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-gray-600">
-              Current Usage
+              Monthly Usage
             </span>
-            <Calendar className="w-5 h-5 text-green-600" />
+            <Calendar className="w-5 h-5 text-purple-600" />
           </div>
           <p className="text-3xl font-bold text-gray-900 mb-2">
-            {currentUsage.toLocaleString()}
+            {monthlyUsage.toLocaleString()}
           </p>
           <div className="space-y-2">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Remaining</span>
+              <span className="text-gray-600">Monthly Limit</span>
               <span className="font-medium text-gray-900">
-                {remainingLimit.toLocaleString()}
+                {subscription.monthlyLimit.toLocaleString()}
               </span>
             </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Remaining This Month</span>
+              <span className="font-medium text-green-600">
+                {monthlyRemaining.toLocaleString()}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${
+                  monthlyUsagePercent >= 80 ? "bg-red-500" : "bg-purple-600"
+                }`}
+                style={{ width: `${Math.min(monthlyUsagePercent, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              {monthlyUsagePercent.toFixed(1)}% used
+            </p>
+          </div>
+        </div>
+
+        {/* Current Billing Cycle */}
+        <div className="bg-white border border-gray-200 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-600">
+              Current Billing Cycle
+            </span>
+            <TrendingUp className="w-5 h-5 text-green-600" />
+          </div>
+          <p className="text-3xl font-bold text-gray-900 mb-2">
+            {currentCycleUsage.toLocaleString()}
+          </p>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Cycle Limit</span>
+              <span className="font-medium text-gray-900">
+                {currentCycleLimit.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600">Remaining</span>
+              <span className="font-medium text-green-600">
+                {currentCycleRemaining.toLocaleString()}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="h-2 rounded-full transition-all bg-green-600"
+                style={{
+                  width: `${Math.min(currentCyclePercent * 100, 100)}%`,
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-500">
+              {(currentCyclePercent * 100).toFixed(1)}% used
+            </p>
           </div>
         </div>
 
@@ -423,6 +523,44 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
                 {actionLoading === "cancel" ? "Cancelling..." : "Yes, Cancel"}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
+          <div
+            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg border-2 ${
+              toast.type === "success"
+                ? "bg-green-50 border-green-500 text-green-900"
+                : "bg-red-50 border-red-500 text-red-900"
+            }`}
+          >
+            {toast.type === "success" ? (
+              <svg
+                className="w-5 h-5 flex-shrink-0 text-green-600"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            ) : (
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
+            )}
+            <p className="font-medium flex-1">{toast.message}</p>
+            <button
+              onClick={() =>
+                setToast({ show: false, message: "", type: "success" })
+              }
+              className="hover:opacity-70 transition"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}

@@ -11,7 +11,6 @@ const Header: React.FC = () => {
   const notificationCount = unreadData?.data?.unreadCount || 0;
 
   const student = data?.data;
-  console.log(data);
 
   const handleNotificationClick = () => {
     navigate("/dashboard/notifications");
