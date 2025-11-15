@@ -124,16 +124,37 @@ const CampaignDetailsPage: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               {getStatusBadge(campaign.status)}
-              {campaign.status === "FAILED" ||
-                (campaign.status === "DRAFT" && (
-                  <button
-                    onClick={() => navigate(`/dashboard/edit-failed/${campaign.id}`)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
-                  >
-                    <Edit size={18} />
-                    Edit & Resubmit
-                  </button>
-                ))}
+
+              {/* Edit buttons based on campaign status */}
+              {campaign.status === "FAILED" && (
+                <button
+                  onClick={() => navigate(`/dashboard/edit-campaign/${campaign.id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+                >
+                  <Edit size={18} />
+                  Edit & Resend
+                </button>
+              )}
+
+              {campaign.status === "SENT" && (
+                <button
+                  onClick={() => navigate(`/dashboard/edit-campaign/${campaign.id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium"
+                >
+                  <Edit size={18} />
+                  Edit & Resend
+                </button>
+              )}
+
+              {campaign.status === "DRAFT" && (
+                <button
+                  onClick={() => navigate(`/dashboard/edit-campaign/${campaign.id}`)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  <Edit size={18} />
+                  Continue
+                </button>
+              )}
             </div>
           </div>
         </div>
