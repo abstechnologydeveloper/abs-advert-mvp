@@ -1,5 +1,5 @@
 // ==================== Updated BillingPage.tsx ====================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useBilling } from "./hooks/useBilling";
 import CampaignTypeSelector from "./components/CampaignTypeSelector";
 import PlansTab from "./components/PlansTab";
@@ -30,6 +30,18 @@ const BillingPage: React.FC = () => {
     isSubscribing,
   } = useBilling();
 
+  useEffect(() => {
+    const handleSwitchTab = (event: Event) => {
+      const customEvent = event as CustomEvent<
+        "overview" | "plans" | "history"
+      >;
+      setActiveTab(customEvent.detail);
+    };
+
+    window.addEventListener("switchTab", handleSwitchTab);
+    return () => window.removeEventListener("switchTab", handleSwitchTab);
+  }, []);
+
   // Change Plan Modal State
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
   const [selectedSubscriptionId, setSelectedSubscriptionId] =
@@ -42,6 +54,7 @@ const BillingPage: React.FC = () => {
   // Fetch active subscriptions
   const { data: activeSubscriptionsData, isLoading: isLoadingSubscriptions } =
     useGetActiveSubscriptionsQuery(undefined);
+  console.log("Active SubscriptionData:", activeSubscriptionsData);
 
   const activeSubscriptions = activeSubscriptionsData?.data || [];
 
