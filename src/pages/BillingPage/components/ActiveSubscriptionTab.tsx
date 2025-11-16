@@ -19,9 +19,9 @@ import {
   useCancelSubscriptionByIdMutation,
   useToggleAutoRenewMutation,
   useRenewSubscriptionMutation,
-  useGetSubscriptionUsageQuery,
   useCheckSubscriptionLimitQuery,
 } from "../../../redux/biling/billing-api";
+import { useToastContext } from "../hooks/useToast";
 
 interface ActiveSubscriptionTabProps {
   activeSubscriptions: ActiveSubscription[];
@@ -34,13 +34,9 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   campaignType,
   onChangePlan,
 }) => {
+  const { addToast } = useToastContext();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [toast, setToast] = useState<{
-    show: boolean;
-    message: string;
-    type: "success" | "error";
-  }>({ show: false, message: "", type: "success" });
 
   const subscription = activeSubscriptions.find(
     (sub) =>
@@ -53,28 +49,10 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   const [toggleAutoRenew] = useToggleAutoRenewMutation();
   const [renewSubscription] = useRenewSubscriptionMutation();
 
-  const { data: usageData } = useGetSubscriptionUsageQuery(
-    subscription?.id || "",
-    { skip: !subscription?.id }
-  );
-
   const { data: limitData } = useCheckSubscriptionLimitQuery(
     subscription?.id || "",
     { skip: !subscription?.id }
   );
-
-  // Show toast notification
-  const showToast = (message: string, type: "success" | "error") => {
-    // Shorten long messages
-    const shortMessage =
-      message.length > 60 ? message.substring(0, 57) + "..." : message;
-
-    setToast({ show: true, message: shortMessage, type });
-    setTimeout(
-      () => setToast({ show: false, message: "", type: "success" }),
-      4000
-    );
-  };
 
   // Handle Cancel Subscription
   const handleCancelSubscription = async () => {
@@ -83,10 +61,10 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("cancel");
     try {
       await cancelSubscription(subscription.id).unwrap();
-      showToast("Subscription cancelled successfully", "success");
+      addToast("Subscription cancelled successfully", "success");
       setShowCancelConfirm(false);
     } catch (error: any) {
-      showToast(
+      addToast(
         error?.data?.message || "Failed to cancel subscription",
         "error"
       );
@@ -102,14 +80,14 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("autorenew");
     try {
       await toggleAutoRenew(subscription.id).unwrap();
-      showToast(
+      addToast(
         `Auto-renewal ${
           subscription.autoRenew ? "disabled" : "enabled"
         } successfully`,
         "success"
       );
     } catch (error: any) {
-      showToast(
+      addToast(
         error?.data?.message || "Failed to toggle auto-renewal",
         "error"
       );
@@ -125,12 +103,9 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     setActionLoading("renew");
     try {
       await renewSubscription(subscription.id).unwrap();
-      showToast("Subscription renewed successfully", "success");
+      addToast("Subscription renewed successfully", "success");
     } catch (error: any) {
-      showToast(
-        error?.data?.message || "Failed to renew subscription",
-        "error"
-      );
+      addToast(error?.data?.message || "Failed to renew subscription", "error");
     } finally {
       setActionLoading(null);
     }
@@ -166,21 +141,12 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   const todayUsage = subscription.todayUsage?.dailySent || 0;
   const dailyUsagePercent = (todayUsage / subscription.dailyLimit) * 100;
 
-  // Monthly Usage
+  // Monthly Usage - Use monthlySent from todayUsage
   const monthlyUsage = subscription.todayUsage?.monthlySent || 0;
   const monthlyUsagePercent = (monthlyUsage / subscription.monthlyLimit) * 100;
 
-  // Parse usage data from API
-  const currentCycleUsage = usageData?.data?.currentCycle?.sent || 0;
-  const currentCycleLimit =
-    usageData?.data?.currentCycle?.limit || subscription.monthlyLimit;
-  const currentCycleRemaining =
-    usageData?.data?.currentCycle?.remaining || subscription.monthlyLimit;
-  const currentCyclePercent = usageData?.data?.currentCycle?.percentage || 0;
-
-  // Parse limit check data
-  const dailyRemaining = limitData?.data?.dailyRemaining || 0;
-  const monthlyRemaining = limitData?.data?.monthlyRemaining || 0;
+  const dailyRemaining = subscription.dailyLimit - todayUsage;
+  const monthlyRemaining = subscription.monthlyLimit - monthlyUsage;
   const canSendMore = limitData?.data?.allowed !== false;
 
   return (
@@ -236,7 +202,7 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
         <button
           onClick={handleToggleAutoRenew}
           disabled={actionLoading === "autorenew"}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-blue-500 hover:bg-blue-50 transition font-medium text-gray-700 hover:text-blue-600 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-b from-white to-gray-50 border border-gray-300 rounded-xl hover:from-blue-50 hover:to-blue-100 hover:border-blue-400 transition-all duration-200 font-semibold text-gray-700 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md active:shadow-inner active:scale-[0.98]"
         >
           <RefreshCw className="w-4 h-4" />
           {actionLoading === "autorenew"
@@ -245,27 +211,24 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
             ? "Disable Auto-Renew"
             : "Enable Auto-Renew"}
         </button>
-
         <button
           onClick={handleRenewSubscription}
           disabled={actionLoading === "renew"}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition font-medium text-gray-700 hover:text-green-600 disabled:opacity-50"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-b from-white to-gray-50 border border-gray-300 rounded-xl hover:from-green-50 hover:to-green-100 hover:border-green-400 transition-all duration-200 font-semibold text-gray-700 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md active:shadow-inner active:scale-[0.98]"
         >
           <TrendingUp className="w-4 h-4" />
           {actionLoading === "renew" ? "Processing..." : "Renew Now"}
         </button>
-
         <button
           onClick={() => onChangePlan?.(subscription.id)}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl hover:border-purple-500 hover:bg-purple-50 transition font-medium text-gray-700 hover:text-purple-600"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-b from-white to-gray-50 border border-gray-300 rounded-xl hover:from-purple-50 hover:to-purple-100 hover:border-purple-400 transition-all duration-200 font-semibold text-gray-700 hover:text-purple-700 shadow-sm hover:shadow-md active:shadow-inner active:scale-[0.98]"
         >
           <Edit className="w-4 h-4" />
           Change Plan
         </button>
-
         <button
           onClick={() => setShowCancelConfirm(true)}
-          className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-red-200 rounded-xl hover:border-red-500 hover:bg-red-50 transition font-medium text-red-600 hover:text-red-700"
+          className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-b from-white to-gray-50 border border-red-300 rounded-xl hover:from-red-50 hover:to-red-100 hover:border-red-400 transition-all duration-200 font-semibold text-red-600 hover:text-red-700 shadow-sm hover:shadow-md active:shadow-inner active:scale-[0.98]"
         >
           <XCircle className="w-4 h-4" />
           Cancel Plan
@@ -362,44 +325,6 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
             </div>
             <p className="text-xs text-gray-500">
               {monthlyUsagePercent.toFixed(1)}% used
-            </p>
-          </div>
-        </div>
-
-        {/* Current Billing Cycle */}
-        <div className="bg-white border border-gray-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-gray-600">
-              Current Billing Cycle
-            </span>
-            <TrendingUp className="w-5 h-5 text-green-600" />
-          </div>
-          <p className="text-3xl font-bold text-gray-900 mb-2">
-            {currentCycleUsage.toLocaleString()}
-          </p>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Cycle Limit</span>
-              <span className="font-medium text-gray-900">
-                {currentCycleLimit.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-gray-600">Remaining</span>
-              <span className="font-medium text-green-600">
-                {currentCycleRemaining.toLocaleString()}
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="h-2 rounded-full transition-all bg-green-600"
-                style={{
-                  width: `${Math.min(currentCyclePercent * 100, 100)}%`,
-                }}
-              />
-            </div>
-            <p className="text-xs text-gray-500">
-              {(currentCyclePercent * 100).toFixed(1)}% used
             </p>
           </div>
         </div>
@@ -523,44 +448,6 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
                 {actionLoading === "cancel" ? "Cancelling..." : "Yes, Cancel"}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Toast Notification */}
-      {toast.show && (
-        <div className="fixed bottom-6 right-6 z-50 animate-fade-in">
-          <div
-            className={`flex items-center gap-3 px-6 py-4 rounded-xl shadow-lg border-2 ${
-              toast.type === "success"
-                ? "bg-green-50 border-green-500 text-green-900"
-                : "bg-red-50 border-red-500 text-red-900"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <svg
-                className="w-5 h-5 flex-shrink-0 text-green-600"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            ) : (
-              <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-600" />
-            )}
-            <p className="font-medium flex-1">{toast.message}</p>
-            <button
-              onClick={() =>
-                setToast({ show: false, message: "", type: "success" })
-              }
-              className="hover:opacity-70 transition"
-            >
-              <XCircle className="w-5 h-5" />
-            </button>
           </div>
         </div>
       )}

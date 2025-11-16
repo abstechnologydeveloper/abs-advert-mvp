@@ -1,5 +1,6 @@
 // ==================== Updated EmailPlans.tsx ====================
 import React from "react";
+import { ToastProvider } from "../BillingPage/components/ToastNotification";
 import { useBilling } from "../BillingPage/hooks/useBilling";
 import WalletCard from "../BillingPage/components/WalletCard";
 import PlansTab from "../BillingPage/components/PlansTab";
@@ -9,7 +10,7 @@ import {
   useGetActiveSubscriptionsQuery,
 } from "../../redux/biling/billing-api";
 
-const SubscriptionPLans: React.FC = () => {
+const SubscriptionPlansContent: React.FC = () => {
   const {
     showFundModal,
     setShowFundModal,
@@ -96,4 +97,13 @@ const SubscriptionPLans: React.FC = () => {
   );
 };
 
-export default SubscriptionPLans;
+// Wrap with ToastProvider
+const SubscriptionPlans: React.FC = () => {
+  return (
+    <ToastProvider>
+      <SubscriptionPlansContent />
+    </ToastProvider>
+  );
+};
+
+export default SubscriptionPlans;
