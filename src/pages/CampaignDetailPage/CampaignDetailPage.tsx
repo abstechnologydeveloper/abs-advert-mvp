@@ -148,7 +148,7 @@ const CampaignDetailsPage: React.FC = () => {
 
               {campaign.status === "DRAFT" && (
                 <button
-                  onClick={() => navigate(`/dashboard/edit-campaign/${campaign.id}`)}
+                  onClick={() => navigate(`/dashboard/edit-draft/${campaign.id}`)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
                 >
                   <Edit size={18} />
