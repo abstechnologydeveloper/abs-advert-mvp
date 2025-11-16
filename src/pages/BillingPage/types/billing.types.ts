@@ -36,6 +36,8 @@ export interface ActiveSubscription {
     features: string[];
   };
   todayUsage: {
+    dailySent: number;
+    monthlySent: number;
     emailsSent: number;
   } | null;
 }
