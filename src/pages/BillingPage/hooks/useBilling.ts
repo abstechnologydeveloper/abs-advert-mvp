@@ -19,8 +19,11 @@ import {
   UsageState,
   SelectedPlanForFunding,
 } from "../types/billing.types";
+import { useToastContext } from "./useToast";
 
 export const useBilling = () => {
+  const { addToast } = useToastContext();
+
   const [selectedCampaignType, setSelectedCampaignType] =
     useState<CampaignTypeId>("email");
   const [activeTab, setActiveTab] = useState<"overview" | "plans" | "history">(
@@ -30,7 +33,7 @@ export const useBilling = () => {
   const [selectedPlanForFunding, setSelectedPlanForFunding] =
     useState<SelectedPlanForFunding | null>(null);
 
-  // RTK Query hooks - NOW WITH undefined PARAMETER
+  // RTK Query hooks
   const {
     data: walletBalanceData,
     isLoading: walletLoading,
@@ -62,7 +65,7 @@ export const useBilling = () => {
     ? transformApiTransactions(walletSummaryData.data.recentTransactions)
     : [];
 
-  // Mock subscriptions and usage (replace with actual API when available)
+  // Mock subscriptions and usage
   const [subscriptions, setSubscriptions] = useState<SubscriptionsState>({
     email: null,
     quills: null,
@@ -84,7 +87,6 @@ export const useBilling = () => {
    */
   const handleFundWallet = async (amount: number): Promise<void> => {
     try {
-      // Get current URL and create callback URL
       const callbackUrl = `${window.location.origin}/billing/payment-callback`;
 
       const response = await initializePayment({
@@ -93,16 +95,16 @@ export const useBilling = () => {
       }).unwrap();
 
       if (response.success && response.data?.authorization_url) {
-        // Redirect to payment gateway
         window.location.href = response.data.authorization_url;
       } else {
         throw new Error("Failed to initialize payment");
       }
     } catch (error: any) {
       console.error("Payment initialization failed:", error);
-      alert(
+      addToast(
         error?.data?.message ||
-          "Failed to initialize payment. Please try again."
+          "Failed to initialize payment. Please try again.",
+        "error"
       );
     }
   };
@@ -147,16 +149,17 @@ export const useBilling = () => {
         },
       }));
 
-      alert(`Successfully subscribed to ${planName} plan!`);
+      addToast(`Successfully subscribed to ${planName} plan! 🎉`, "success");
 
       // Refetch wallet data
       await refetchBalance();
       await refetchSummary();
     } catch (error: any) {
       console.error("Subscription error:", error);
-      const errorMessage =
-        error?.data?.message || "Subscription failed. Please try again.";
-      alert(errorMessage);
+      addToast(
+        error?.data?.message || "Subscription failed. Please try again.",
+        "error"
+      );
     }
   };
 

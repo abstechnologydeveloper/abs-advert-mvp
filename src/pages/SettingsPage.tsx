@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useGetStudentDetailsQuery } from "../redux/user/user-apis";
-
+import { ToastProvider } from "./BillingPage/components/ToastNotification";
+import { useToastContext } from "./BillingPage/hooks/useToast";
 interface SettingsPageProps {
   onLogout: () => void;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
+const SettingsPageContent: React.FC<SettingsPageProps> = ({ onLogout }) => {
+  const { addToast } = useToastContext();
   const [activeTab, setActiveTab] = useState("profile");
 
   // ✅ Fetch real student data
@@ -60,22 +62,38 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
-    alert("Profile updated successfully!");
+    addToast("Profile updated successfully! 🎉", "success");
   };
 
   const handleChangePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.newPassword !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      addToast("Passwords do not match!", "error");
       return;
     }
-    alert("Password changed successfully!");
+    addToast("Password changed successfully! 🔒", "success");
     setFormData({
       ...formData,
       currentPassword: "",
       newPassword: "",
       confirmPassword: "",
     });
+  };
+
+  const handleDownloadData = () => {
+    addToast("Preparing your data download...", "info");
+  };
+
+  const handleClearCache = () => {
+    addToast("Cache cleared successfully!", "success");
+  };
+
+  const handleDeactivateAccount = () => {
+    addToast("Account deactivation requires confirmation", "info");
+  };
+
+  const handleDeleteAccount = () => {
+    addToast("Account deletion requires confirmation", "error");
   };
 
   const tabs = [
@@ -85,13 +103,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
     { id: "account", label: "Account", icon: "⚙️" },
   ];
 
-  if (isLoading) return <div className="p-6 text-gray-600">Loading settings...</div>;
-  if (error) return <div className="p-6 text-red-500">Failed to load user profile</div>;
+  if (isLoading)
+    return <div className="p-6 text-gray-600">Loading settings...</div>;
+  if (error)
+    return <div className="p-6 text-red-500">Failed to load user profile</div>;
 
   return (
     <div className="md:p-4 p-3 sm:p-6 max-w-6xl mx-auto">
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          Settings
+        </h1>
         <p className="text-sm sm:text-base text-gray-600 mt-2">
           Manage your account settings and preferences
         </p>
@@ -119,7 +141,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
         <div className="p-4 sm:p-6">
           {activeTab === "profile" && (
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Profile Information</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+                Profile Information
+              </h2>
               <form onSubmit={handleSaveProfile} className="space-y-6">
                 <div className="flex flex-col sm:flex-row items-center sm:space-x-6 mb-6 sm:mb-8">
                   <img
@@ -134,6 +158,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   <div className="text-center sm:text-left">
                     <button
                       type="button"
+                      onClick={() =>
+                        addToast("Avatar upload feature coming soon!", "info")
+                      }
                       className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
                     >
                       Change Avatar
@@ -158,7 +185,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Email
+                    </label>
                     <input
                       type="email"
                       name="email"
@@ -169,7 +198,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Phone
+                    </label>
                     <input
                       type="tel"
                       name="phone"
@@ -191,11 +222,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
               </form>
             </div>
           )}
+
           {/* Security Tab */}
           {activeTab === "security" && (
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Security Settings</h2>
-              <form onSubmit={handleChangePassword} className="space-y-4 sm:space-y-6 max-w-md">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+                Security Settings
+              </h2>
+              <form
+                onSubmit={handleChangePassword}
+                className="space-y-4 sm:space-y-6 max-w-md"
+              >
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Current Password
@@ -235,8 +272,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                 </div>
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
                   <p className="text-xs sm:text-sm text-blue-800">
-                    <strong>Password requirements:</strong> At least 8 characters, including
-                    uppercase, lowercase, numbers, and special characters.
+                    <strong>Password requirements:</strong> At least 8
+                    characters, including uppercase, lowercase, numbers, and
+                    special characters.
                   </p>
                 </div>
                 <button
@@ -251,10 +289,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   Two-Factor Authentication
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600 mb-4">
-                  Add an extra layer of security to your account by enabling two-factor
-                  authentication.
+                  Add an extra layer of security to your account by enabling
+                  two-factor authentication.
                 </p>
-                <button className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                <button
+                  onClick={() =>
+                    addToast("2FA setup feature coming soon!", "info")
+                  }
+                  className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                >
                   Enable 2FA
                 </button>
               </div>
@@ -281,7 +324,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     <input
                       type="checkbox"
                       checked={notifications.emailNotifications}
-                      onChange={() => handleNotificationChange("emailNotifications")}
+                      onChange={() => {
+                        handleNotificationChange("emailNotifications");
+                        addToast(
+                          `Email notifications ${
+                            !notifications.emailNotifications
+                              ? "enabled"
+                              : "disabled"
+                          }`,
+                          "success"
+                        );
+                      }}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -301,7 +354,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     <input
                       type="checkbox"
                       checked={notifications.campaignUpdates}
-                      onChange={() => handleNotificationChange("campaignUpdates")}
+                      onChange={() => {
+                        handleNotificationChange("campaignUpdates");
+                        addToast(
+                          `Campaign updates ${
+                            !notifications.campaignUpdates
+                              ? "enabled"
+                              : "disabled"
+                          }`,
+                          "success"
+                        );
+                      }}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -321,7 +384,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     <input
                       type="checkbox"
                       checked={notifications.weeklyReports}
-                      onChange={() => handleNotificationChange("weeklyReports")}
+                      onChange={() => {
+                        handleNotificationChange("weeklyReports");
+                        addToast(
+                          `Weekly reports ${
+                            !notifications.weeklyReports
+                              ? "enabled"
+                              : "disabled"
+                          }`,
+                          "success"
+                        );
+                      }}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -341,7 +414,17 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     <input
                       type="checkbox"
                       checked={notifications.marketingEmails}
-                      onChange={() => handleNotificationChange("marketingEmails")}
+                      onChange={() => {
+                        handleNotificationChange("marketingEmails");
+                        addToast(
+                          `Marketing emails ${
+                            !notifications.marketingEmails
+                              ? "enabled"
+                              : "disabled"
+                          }`,
+                          "success"
+                        );
+                      }}
                       className="sr-only peer"
                     />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
@@ -354,7 +437,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
           {/* Account Tab */}
           {activeTab === "account" && (
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">Account Management</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4 sm:mb-6">
+                Account Management
+              </h2>
 
               <div className="space-y-4 sm:space-y-6">
                 <div className="bg-white border border-gray-200 rounded-lg p-4 sm:p-6">
@@ -363,15 +448,25 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                   </h3>
                   <div className="space-y-2 sm:space-y-3">
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                      <span className="text-sm sm:text-base text-gray-600">Account Type:</span>
-                      <span className="text-sm sm:text-base font-medium">Premium</span>
+                      <span className="text-sm sm:text-base text-gray-600">
+                        Account Type:
+                      </span>
+                      <span className="text-sm sm:text-base font-medium">
+                        Premium
+                      </span>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                      <span className="text-sm sm:text-base text-gray-600">Member Since:</span>
-                      <span className="text-sm sm:text-base font-medium">January 2024</span>
+                      <span className="text-sm sm:text-base text-gray-600">
+                        Member Since:
+                      </span>
+                      <span className="text-sm sm:text-base font-medium">
+                        January 2024
+                      </span>
                     </div>
                     <div className="flex flex-col sm:flex-row sm:justify-between gap-1 sm:gap-0">
-                      <span className="text-sm sm:text-base text-gray-600">Account Status:</span>
+                      <span className="text-sm sm:text-base text-gray-600">
+                        Account Status:
+                      </span>
                       <span className="text-sm sm:text-base font-medium text-green-600">
                         Active
                       </span>
@@ -384,9 +479,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     Data & Privacy
                   </h3>
                   <div className="space-y-3 sm:space-y-4">
-                    <button className="w-full text-left px-3 sm:px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                    <button
+                      onClick={handleDownloadData}
+                      className="w-full text-left px-3 sm:px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm sm:text-base font-medium">Download Your Data</span>
+                        <span className="text-sm sm:text-base font-medium">
+                          Download Your Data
+                        </span>
                         <svg
                           className="w-5 h-5 text-gray-400 flex-shrink-0"
                           fill="none"
@@ -406,9 +506,14 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                       </p>
                     </button>
 
-                    <button className="w-full text-left px-3 sm:px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+                    <button
+                      onClick={handleClearCache}
+                      className="w-full text-left px-3 sm:px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+                    >
                       <div className="flex items-center justify-between">
-                        <span className="text-sm sm:text-base font-medium">Clear Cache</span>
+                        <span className="text-sm sm:text-base font-medium">
+                          Clear Cache
+                        </span>
                         <svg
                           className="w-5 h-5 text-gray-400 flex-shrink-0"
                           fill="none"
@@ -423,7 +528,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                           />
                         </svg>
                       </div>
-                      <p className="text-xs sm:text-sm text-gray-500 mt-1">Clear all cached data</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">
+                        Clear all cached data
+                      </p>
                     </button>
                   </div>
                 </div>
@@ -439,15 +546,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
                     >
                       Logout
                     </button>
-                    <button className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">
+                    <button
+                      onClick={handleDeactivateAccount}
+                      className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border-2 border-red-600 text-red-600 rounded-lg hover:bg-red-50 transition font-medium"
+                    >
                       Deactivate Account
                     </button>
-                    <button className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border-2 border-red-800 text-red-800 rounded-lg hover:bg-red-50 transition font-medium">
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="w-full px-4 py-2.5 sm:py-3 text-sm sm:text-base bg-white border-2 border-red-800 text-red-800 rounded-lg hover:bg-red-50 transition font-medium"
+                    >
                       Delete Account Permanently
                     </button>
                   </div>
                   <p className="text-xs sm:text-sm text-red-700 mt-3 sm:mt-4">
-                    ⚠️ These actions are irreversible. Please be certain before proceeding.
+                    ⚠️ These actions are irreversible. Please be certain before
+                    proceeding.
                   </p>
                 </div>
               </div>
@@ -456,6 +570,15 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Wrap with ToastProvider
+const SettingsPage: React.FC<SettingsPageProps> = ({ onLogout }) => {
+  return (
+    <ToastProvider>
+      <SettingsPageContent onLogout={onLogout} />
+    </ToastProvider>
   );
 };
 
