@@ -49,13 +49,7 @@ const App: React.FC = () => {
         {/* Login Route */}
         <Route
           path="/login"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard/overview" replace />
-            ) : (
-              <LoginPage />
-            )
-          }
+          element={isAuthenticated ? <Navigate to="/dashboard/overview" replace /> : <LoginPage />}
         />
 
         {/* Protected Routes */}
@@ -84,10 +78,8 @@ const App: React.FC = () => {
           <Route path="campaign/:id" element={<CampaignDetailsPage />} />
           <Route path="edit-draft/:id" element={<CreateCampaignPage />} />
           <Route path="edit-failed/:id" element={<CreateCampaignPage />} />
-          <Route
-            path="campaign-guidelines"
-            element={<CampaignGuidelinesPage />}
-          />
+          <Route path="edit-campaign/:id" element={<CreateCampaignPage />} />
+          <Route path="campaign-guidelines" element={<CampaignGuidelinesPage />} />
           {/* Quills Ads */}
           <Route path="billing" element={<BillingPage />} />
           {/* Notifications */}
@@ -108,14 +100,8 @@ const App: React.FC = () => {
           />
 
           {/* Blog Ads */}
-          <Route
-            path="web-blog-ads"
-            element={<NoPermissionPage feature="Blog Advertising" />}
-          />
-          <Route
-            path="blog-ads-drafts"
-            element={<NoPermissionPage feature="Blog Advertising" />}
-          />
+          <Route path="web-blog-ads" element={<NoPermissionPage feature="Blog Advertising" />} />
+          <Route path="blog-ads-drafts" element={<NoPermissionPage feature="Blog Advertising" />} />
           <Route
             path="blog-ads-history"
             element={<NoPermissionPage feature="Blog Advertising" />}
@@ -158,10 +144,7 @@ const App: React.FC = () => {
           />
 
           {/* Settings & Others */}
-          <Route
-            path="settings"
-            element={<SettingsPage onLogout={handleLogout} />}
-          />
+          <Route path="settings" element={<SettingsPage onLogout={handleLogout} />} />
           <Route path="privacy-policy" element={<PrivacyPolicyPage />} />
           <Route path="contact-us" element={<ContactUsPage />} />
           <Route path="subscription-plans" element={<SubscriptionPLans />} />
