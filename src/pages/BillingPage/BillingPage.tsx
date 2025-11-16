@@ -1,5 +1,6 @@
 // ==================== Updated BillingPage.tsx ====================
 import React, { useEffect, useState } from "react";
+import { ToastProvider } from "./components/ToastNotification";
 import { useBilling } from "./hooks/useBilling";
 import CampaignTypeSelector from "./components/CampaignTypeSelector";
 import PlansTab from "./components/PlansTab";
@@ -13,7 +14,7 @@ import {
   useGetActiveSubscriptionsQuery,
 } from "../../redux/biling/billing-api";
 
-const BillingPage: React.FC = () => {
+const BillingPageContent: React.FC = () => {
   const {
     selectedCampaignType,
     setSelectedCampaignType,
@@ -30,17 +31,15 @@ const BillingPage: React.FC = () => {
     isSubscribing,
   } = useBilling();
 
-  useEffect(() => {
-    const handleSwitchTab = (event: Event) => {
-      const customEvent = event as CustomEvent<
-        "overview" | "plans" | "history"
-      >;
-      setActiveTab(customEvent.detail);
-    };
+useEffect(() => {
+  const handleSwitchTab = (event: Event) => {
+    const customEvent = event as CustomEvent<"overview" | "plans" | "history">;
+    setActiveTab(customEvent.detail);
+  };
 
-    window.addEventListener("switchTab", handleSwitchTab);
-    return () => window.removeEventListener("switchTab", handleSwitchTab);
-  }, []);
+  window.addEventListener("switchTab", handleSwitchTab);
+  return () => window.removeEventListener("switchTab", handleSwitchTab);
+}, [setActiveTab]);
 
   // Change Plan Modal State
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
@@ -54,9 +53,9 @@ const BillingPage: React.FC = () => {
   // Fetch active subscriptions
   const { data: activeSubscriptionsData, isLoading: isLoadingSubscriptions } =
     useGetActiveSubscriptionsQuery(undefined);
-  console.log("Active SubscriptionData:", activeSubscriptionsData);
 
   const activeSubscriptions = activeSubscriptionsData?.data || [];
+  console.log("activeSubscriptionData", activeSubscriptions);
 
   // Find current subscription for change plan modal
   const currentSubscription = activeSubscriptions.find(
@@ -200,6 +199,15 @@ const BillingPage: React.FC = () => {
         )}
       </div>
     </div>
+  );
+};
+
+// Wrap with ToastProvider
+const BillingPage: React.FC = () => {
+  return (
+    <ToastProvider>
+      <BillingPageContent />
+    </ToastProvider>
   );
 };
 
