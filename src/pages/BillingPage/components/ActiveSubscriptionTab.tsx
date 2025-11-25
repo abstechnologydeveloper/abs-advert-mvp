@@ -155,8 +155,6 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   const monthlyUsagePercent = usageData?.data?.currentCycle?.percentage || 0;
 
   const daysUntilRenewal = usageData?.data?.subscription?.daysUntilRenewal || 0;
-  const last30DaysData = usageData?.data?.last30Days || [];
-
   // Check if limit is reached
   const canSendMore = dailyRemaining > 0 && monthlyRemaining > 0;
 
@@ -428,57 +426,6 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
                 })}
               </p>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Recent Activity (Last 30 Days) */}
-      {last30DaysData.length > 0 && (
-        <div className="bg-white border border-gray-200 rounded-xl p-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">
-            Recent Activity (Last 30 Days)
-          </h4>
-          <div className="space-y-3 max-h-64 overflow-y-auto">
-            {[...last30DaysData]
-              .sort(
-                (a: any, b: any) =>
-                  new Date(b.usageDate).getTime() -
-                  new Date(a.usageDate).getTime()
-              )
-              .map((day: any) => (
-                <div
-                  key={day.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Mail className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {new Date(day.usageDate).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {day.campaignId
-                          ? `Campaign: ${day.campaignId.substring(0, 8)}...`
-                          : "No campaign"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {day.dailySent.toLocaleString()} sent
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      Monthly: {day.monthlySent.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              ))}
           </div>
         </div>
       )}
