@@ -12,6 +12,7 @@ import {
   Edit,
   AlertCircle,
   TrendingUp,
+  Activity,
 } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 import { ActiveSubscription } from "../types/billing.types";
@@ -19,7 +20,7 @@ import {
   useCancelSubscriptionByIdMutation,
   useToggleAutoRenewMutation,
   useRenewSubscriptionMutation,
-  useCheckSubscriptionLimitQuery,
+  useGetSubscriptionUsageQuery,
 } from "../../../redux/biling/billing-api";
 import { useToastContext } from "../hooks/useToast";
 
@@ -49,10 +50,12 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
   const [toggleAutoRenew] = useToggleAutoRenewMutation();
   const [renewSubscription] = useRenewSubscriptionMutation();
 
-  const { data: limitData } = useCheckSubscriptionLimitQuery(
-    subscription?.id || "",
-    { skip: !subscription?.id }
-  );
+  // Use the new usage endpoint
+  const { data: usageData, isLoading: usageLoading } =
+    useGetSubscriptionUsageQuery(subscription?.id || "", {
+      skip: !subscription?.id,
+      pollingInterval: 30000, // Refresh every 30 seconds
+    });
 
   // Handle Cancel Subscription
   const handleCancelSubscription = async () => {
@@ -137,17 +140,23 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
     );
   }
 
-  // Daily Usage
-  const todayUsage = subscription.todayUsage?.dailySent || 0;
-  const dailyUsagePercent = (todayUsage / subscription.dailyLimit) * 100;
+  // Extract usage data from the new endpoint
+  const todayUsage = usageData?.data?.today?.sent || 0;
+  const dailyLimit = usageData?.data?.today?.limit || subscription.dailyLimit;
+  const dailyRemaining =
+    usageData?.data?.today?.remaining || dailyLimit - todayUsage;
+  const dailyUsagePercent = usageData?.data?.today?.percentage || 0;
 
-  // Monthly Usage - Use monthlySent from todayUsage
-  const monthlyUsage = subscription.todayUsage?.monthlySent || 0;
-  const monthlyUsagePercent = (monthlyUsage / subscription.monthlyLimit) * 100;
+  const monthlyUsage = usageData?.data?.currentCycle?.sent || 0;
+  const monthlyLimit =
+    usageData?.data?.currentCycle?.limit || subscription.monthlyLimit;
+  const monthlyRemaining =
+    usageData?.data?.currentCycle?.remaining || monthlyLimit - monthlyUsage;
+  const monthlyUsagePercent = usageData?.data?.currentCycle?.percentage || 0;
 
-  const dailyRemaining = subscription.dailyLimit - todayUsage;
-  const monthlyRemaining = subscription.monthlyLimit - monthlyUsage;
-  const canSendMore = limitData?.data?.allowed !== false;
+  const daysUntilRenewal = usageData?.data?.subscription?.daysUntilRenewal || 0;
+  // Check if limit is reached
+  const canSendMore = dailyRemaining > 0 && monthlyRemaining > 0;
 
   return (
     <div className="space-y-6">
@@ -179,6 +188,12 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
                 }
               )}
             </p>
+            {daysUntilRenewal > 0 && (
+              <p className="text-xs text-gray-500 mt-1">
+                {daysUntilRenewal} {daysUntilRenewal === 1 ? "day" : "days"}{" "}
+                remaining
+              </p>
+            )}
           </div>
         </div>
 
@@ -244,10 +259,19 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
               Limit Reached
             </p>
             <p className="text-sm text-red-700">
-              You've reached your subscription limit. Consider upgrading your
-              plan.
+              {dailyRemaining <= 0
+                ? "You've reached your daily limit. It will reset tomorrow."
+                : "You've reached your monthly limit. Consider upgrading your plan."}
             </p>
           </div>
+        </div>
+      )}
+
+      {/* Loading State for Usage Data */}
+      {usageLoading && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center gap-3">
+          <RefreshCw className="w-5 h-5 text-blue-600 animate-spin" />
+          <p className="text-sm text-blue-700">Loading usage data...</p>
         </div>
       )}
 
@@ -268,12 +292,16 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Daily Limit</span>
               <span className="font-medium text-gray-900">
-                {subscription.dailyLimit.toLocaleString()}
+                {dailyLimit.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Remaining Today</span>
-              <span className="font-medium text-green-600">
+              <span
+                className={`font-medium ${
+                  dailyRemaining > 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {dailyRemaining.toLocaleString()}
               </span>
             </div>
@@ -306,12 +334,16 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Monthly Limit</span>
               <span className="font-medium text-gray-900">
-                {subscription.monthlyLimit.toLocaleString()}
+                {monthlyLimit.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between text-sm">
               <span className="text-gray-600">Remaining This Month</span>
-              <span className="font-medium text-green-600">
+              <span
+                className={`font-medium ${
+                  monthlyRemaining > 0 ? "text-green-600" : "text-red-600"
+                }`}
+              >
                 {monthlyRemaining.toLocaleString()}
               </span>
             </div>
@@ -360,6 +392,44 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
         </div>
       </div>
 
+      {/* Current Cycle Info */}
+      {usageData?.data?.currentCycle && (
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-5 border border-indigo-100">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="w-5 h-5 text-indigo-600" />
+            <h4 className="text-sm font-semibold text-gray-900">
+              Current Billing Cycle
+            </h4>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">Cycle Start</p>
+              <p className="font-medium text-gray-900">
+                {new Date(
+                  usageData.data.currentCycle.startDate
+                ).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 mb-1">Cycle End</p>
+              <p className="font-medium text-gray-900">
+                {new Date(
+                  usageData.data.currentCycle.endDate
+                ).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Features */}
       <div className="bg-white border border-gray-200 rounded-xl p-6">
         <h4 className="text-lg font-semibold text-gray-900 mb-4">
@@ -385,35 +455,6 @@ const ActiveSubscriptionTab: React.FC<ActiveSubscriptionTabProps> = ({
             </li>
           ))}
         </ul>
-      </div>
-
-      {/* Subscription Period */}
-      <div className="bg-gray-50 rounded-xl p-5">
-        <h4 className="text-sm font-semibold text-gray-900 mb-3">
-          Subscription Period
-        </h4>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-gray-600 mb-1">Started</p>
-            <p className="font-medium text-gray-900">
-              {new Date(subscription.startDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-gray-600 mb-1">Expires</p>
-            <p className="font-medium text-gray-900">
-              {new Date(subscription.endDate).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Cancel Confirmation Modal */}
