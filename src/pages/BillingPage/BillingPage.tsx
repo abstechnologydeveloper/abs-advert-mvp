@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { ToastProvider } from "./components/ToastNotification";
 import { useBilling } from "./hooks/useBilling";
-import CampaignTypeSelector from "./components/CampaignTypeSelector";
+// CampaignTypeSelector removed — billing is email-only
 import PlansTab from "./components/PlansTab";
 import FundWalletModal from "./components/FundWalletModal";
 import TransactionHistory from "./components/TransactionHistory";
@@ -15,9 +15,10 @@ import {
 } from "../../redux/biling/billing-api";
 
 const BillingPageContent: React.FC = () => {
+  // Email campaign type is fixed — no other campaign types shown here
+  const EMAIL_TYPE = "email" as const;
+
   const {
-    selectedCampaignType,
-    setSelectedCampaignType,
     activeTab,
     setActiveTab,
     showFundModal,
@@ -84,86 +85,55 @@ useEffect(() => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Billing & Subscriptions
+            Email Campaign Billing
           </h1>
           <p className="text-gray-600">
-            Manage your wallet and campaign subscriptions
+            Manage your email campaign wallet, plans, and transaction history.
           </p>
         </div>
 
         {/* Wallet Card */}
         <WalletCard onFund={() => setShowFundModal(true)} />
 
-        {/* Campaign Type Selector */}
-        <CampaignTypeSelector
-          selectedType={selectedCampaignType}
-          onSelect={setSelectedCampaignType}
-          subscriptions={subscriptions}
-        />
-
         {/* Tabs */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex space-x-4 mb-6 border-b border-gray-200">
-            {["overview", "plans", "history"]
-              .filter(
-                (tab) => tab !== "plans" || selectedCampaignType === "email"
-              )
-              .map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab as typeof activeTab)}
-                  className={`pb-3 px-4 font-medium transition ${
-                    activeTab === tab
-                      ? "text-blue-600 border-b-2 border-blue-600"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
+            {(["overview", "plans", "history"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-3 px-4 font-medium transition ${
+                  activeTab === tab
+                    ? "text-blue-600 border-b-2 border-blue-600"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
           </div>
 
-          {/* Tab Content */}
-          {activeTab === "plans" && selectedCampaignType === "email" && (
+          {activeTab === "plans" && (
             <PlansTab
-              campaignType={selectedCampaignType}
-              plans={transformedPlans[selectedCampaignType] || {}}
+              campaignType={EMAIL_TYPE}
+              plans={transformedPlans[EMAIL_TYPE] || {}}
               walletBalance={walletBalance}
-              currentSubscription={subscriptions[selectedCampaignType]}
+              currentSubscription={subscriptions[EMAIL_TYPE]}
               activeSubscriptions={activeSubscriptions}
               onSubscribe={handleSubscribe}
             />
           )}
 
-          {activeTab === "plans" && selectedCampaignType !== "email" && (
-            <div className="text-center py-12 text-gray-600">
-              Plans are only available for <b>Email</b> Campaigns.
-            </div>
-          )}
-
-          {activeTab === "history" && selectedCampaignType === "email" ? (
+          {activeTab === "history" && (
             <TransactionHistory transactions={transactions} />
-          ) : (
-            activeTab === "history" && (
-              <div className="text-center py-12 text-gray-600">
-                Transaction history is only available for <b>Email</b>{" "}
-                Campaigns.
-              </div>
-            )
           )}
 
-          {activeTab === "overview" && selectedCampaignType === "email" ? (
+          {activeTab === "overview" && (
             <ActiveSubscriptionTab
               activeSubscriptions={activeSubscriptions}
-              campaignType={selectedCampaignType}
+              campaignType={EMAIL_TYPE}
               onChangePlan={handleChangePlanClick}
             />
-          ) : (
-            activeTab === "overview" && (
-              <div className="text-center py-12 text-gray-600">
-                Overview only available for <b>Email</b> Campaigns.
-              </div>
-            )
           )}
         </div>
 
@@ -181,7 +151,7 @@ useEffect(() => {
             onClose={() => setShowChangePlanModal(false)}
             currentSubscriptionId={currentSubscription.id}
             currentPlanName={currentSubscription.planName}
-            availablePlans={transformedPlans[selectedCampaignType] || {}}
+            availablePlans={transformedPlans[EMAIL_TYPE] || {}}
             walletBalance={walletBalance}
           />
         )}

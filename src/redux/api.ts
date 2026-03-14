@@ -18,6 +18,8 @@ export const api = createApi({
     "Schools",
     "Pending",
     "Scheduled",
+    "SelfServeAds",
+    "SelfServeAdWallet",
   ],
   endpoints: () => ({}),
 });

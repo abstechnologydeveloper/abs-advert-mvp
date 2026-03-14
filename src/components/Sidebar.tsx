@@ -1,11 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   Mail,
-  Smartphone,
-  FileText,
-  GraduationCap,
+  Users,
   BookOpen,
   Settings,
   Shield,
@@ -16,6 +14,9 @@ import {
   Save,
   Loader2,
   CreditCard,
+  Globe,
+  Wallet,
+
 } from "lucide-react";
 
 interface SidebarProps {
@@ -26,7 +27,27 @@ interface SidebarProps {
   hasUnsavedChanges?: boolean;
   onSaveAndNavigate?: () => Promise<void>;
   isSaving?: boolean;
+  hasEmailAccess?: boolean;
 }
+
+// Maps route path segments to their sidebar section key (for collapsible sections only)
+const ROUTE_SECTION: Record<string, string> = {
+  "create-campaign": "email",
+  "pending": "email",
+  "scheduled": "email",
+  "drafts": "email",
+  "history": "email",
+  "campaign-guidelines": "email",
+  "subscription-plans": "email",
+  "billing": "email",
+};
+
+const getInitialSection = (pathname: string, hasEmail: boolean): string | null => {
+  const segment = pathname.split("/").pop() ?? "";
+  const section = ROUTE_SECTION[segment];
+  if (section) return section;
+  return hasEmail ? "email" : "app-web";
+};
 
 const Sidebar: React.FC<SidebarProps> = ({
   onNavigate,
@@ -35,14 +56,22 @@ const Sidebar: React.FC<SidebarProps> = ({
   hasUnsavedChanges = false,
   onSaveAndNavigate,
   isSaving = false,
+  hasEmailAccess = true,
 }) => {
+  const location = useLocation();
+  const currentPage = location.pathname.split("/").pop();
+
   const [expandedSection, setExpandedSection] = useState<string | null>(
-    "email"
+    () => getInitialSection(location.pathname, hasEmailAccess)
   );
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [pendingPath, setPendingPath] = useState<string | null>(null);
-  const location = useLocation();
-  const currentPage = location.pathname.split("/").pop();
+
+  // Auto-expand the correct section when route changes (e.g. navigating via URL)
+  useEffect(() => {
+    const section = ROUTE_SECTION[currentPage ?? ""];
+    if (section) setExpandedSection(section);
+  }, [currentPage]);
 
   const isActive = (path: string) => currentPage === path;
 
@@ -79,127 +108,58 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  // Build navigation sections conditionally
   const navigationSections = [
     {
       id: "main",
       title: "",
       items: [
-        {
-          path: "overview",
-          label: "Dashboard",
-          icon: LayoutDashboard,
-        },
+        { path: "overview", label: "Dashboard", icon: LayoutDashboard },
       ],
     },
+    // Email Campaigns — only shown if user has ADS_LOGIN
+    ...(hasEmailAccess
+      ? [
+          {
+            id: "email-campaigns",
+            title: "Email Campaigns",
+            collapsible: true,
+            sections: [
+              {
+                key: "email",
+                label: "Email Campaigns",
+                icon: Mail,
+                items: [
+                  { path: "create-campaign", label: "Create New" },
+                  { path: "pending", label: "In Review" },
+                  { path: "scheduled", label: "Scheduled" },
+                  { path: "drafts", label: "Drafts" },
+                  { path: "history", label: "History" },
+                  { path: "campaign-guidelines", label: "Campaign Guidelines", icon: BookOpen },
+                  { path: "subscription-plans", label: "Subscription Plans", icon: CreditCard },
+                  { path: "billing", label: "Billing & Payments", icon: CreditCard },
+                ],
+              },
+            ],
+          },
+        ]
+      : []),
     {
-      id: "campaigns",
-      title: "Campaigns",
-      collapsible: true,
-      sections: [
-        {
-          key: "email",
-          label: "Email Campaigns",
-          icon: Mail,
-          items: [
-            { path: "create-campaign", label: "Create New" },
-            { path: "pending", label: "In Review" },
-            { path: "scheduled", label: "Scheduled" },
-            { path: "drafts", label: "Drafts" },
-            { path: "history", label: "History" },
-          ],
-        },
-        {
-          key: "quills",
-          label: "Quills Ads",
-          icon: Smartphone,
-          items: [
-            { path: "app-quills-ads", label: "Create New" },
-            { path: "quills-ads-drafts", label: "Drafts" },
-            { path: "quills-ads-history", label: "History" },
-          ],
-        },
-        {
-          key: "blog",
-          label: "Blog Ads",
-          icon: FileText,
-          items: [
-            { path: "web-blog-ads", label: "Create New" },
-            { path: "blog-ads-drafts", label: "Drafts" },
-            { path: "blog-ads-history", label: "History" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "educational-ads",
-      title: "Educational Advertising",
-      collapsible: true,
-      sections: [
-        {
-          key: "scholarship",
-          label: "Scholarship Ads",
-          icon: GraduationCap,
-          items: [
-            { path: "web-scholarship-ads", label: "Web Platform" },
-            { path: "mobile-scholarship-ads", label: "Mobile App" },
-            { path: "scholarship-ads-drafts", label: "Drafts" },
-            { path: "scholarship-ads-history", label: "History" },
-          ],
-        },
-        {
-          key: "library",
-          label: "Library Resource Ads",
-          icon: BookOpen,
-          items: [
-            { path: "web-library-ads", label: "Web Platform" },
-            { path: "mobile-library-ads", label: "Mobile App" },
-            { path: "library-ads-drafts", label: "Drafts" },
-            { path: "library-ads-history", label: "History" },
-          ],
-        },
-      ],
-    },
-    {
-      id: "resources",
-      title: "Resources",
+      id: "ads",
+      title: "Advertising",
       items: [
-        {
-          path: "campaign-guidelines",
-          label: "Campaign Guidelines",
-          icon: BookOpen,
-        },
+        { path: "in-app-ads", label: "In-App Ads", icon: Users },
+        { path: "blog-ads", label: "Blog Ads", icon: Globe },
+        { path: "ad-billing", label: "Ad Wallet & Billing", icon: Wallet },
       ],
     },
     {
       id: "account",
       title: "Support",
       items: [
-        {
-          path: "billing",
-          label: "Billing & Payments",
-          icon: CreditCard,
-        },
-        {
-          path: "subscription-plans",
-          label: "Subscription Plans",
-          icon: Mail,
-        },
-
-        {
-          path: "settings",
-          label: "Settings",
-          icon: Settings,
-        },
-        {
-          path: "privacy-policy",
-          label: "Privacy Policy",
-          icon: Shield,
-        },
-        {
-          path: "contact-us",
-          label: "Contact Us",
-          icon: MessageCircle,
-        },
+        { path: "settings", label: "Settings", icon: Settings },
+        { path: "privacy-policy", label: "Privacy Policy", icon: Shield },
+        { path: "contact-us", label: "Contact Us", icon: MessageCircle },
       ],
     },
   ];
@@ -226,9 +186,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <div className="p-3 bg-yellow-100 rounded-full">
                 <AlertTriangle className="w-6 h-6 text-yellow-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900">
-                Unsaved Changes
-              </h3>
+              <h3 className="text-xl font-bold text-gray-900">Unsaved Changes</h3>
             </div>
             <p className="text-gray-600 mb-6">
               You have unsaved changes. Would you like to save before leaving?
@@ -239,11 +197,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                 disabled={isSaving}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition font-medium disabled:opacity-50"
               >
-                {isSaving ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
+                {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 Save & Leave
               </button>
               <button
@@ -270,11 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           w-72 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800
           text-white flex flex-col
           transform transition-all duration-300 ease-in-out
-          ${
-            isMobileOpen
-              ? "translate-x-0"
-              : "-translate-x-full lg:translate-x-0"
-          }
+          ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           shadow-2xl
         `}
       >
@@ -289,10 +239,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <p className="text-xs text-gray-400">Marketing Platform</p>
             </div>
           </div>
-          <button
-            onClick={onCloseMobile}
-            className="lg:hidden text-gray-400 hover:text-white transition"
-          >
+          <button onClick={onCloseMobile} className="lg:hidden text-gray-400 hover:text-white transition">
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -302,7 +249,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="space-y-6">
             {navigationSections.map((section) => (
               <div key={section.id}>
-                {/* Section Title */}
                 {section.title && (
                   <div className="text-gray-400 text-xs uppercase tracking-wider px-3 mb-2 font-semibold">
                     {section.title}
@@ -319,11 +265,9 @@ const Sidebar: React.FC<SidebarProps> = ({
                           key={item.path}
                           onClick={() => handleNavigationAttempt(item.path)}
                           className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all group
-                            ${
-                              isActive(item.path)
-                                ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-                                : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                            }
+                            ${isActive(item.path)
+                              ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
+                              : "text-gray-300 hover:bg-gray-800 hover:text-white"}
                           `}
                         >
                           <Icon className="w-5 h-5" />
@@ -340,50 +284,37 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {section.sections.map((subsection) => {
                       const Icon = subsection.icon;
                       const isExpanded = expandedSection === subsection.key;
-                      const hasActiveItem = subsection.items.some((item) =>
-                        isActive(item.path)
-                      );
+                      const hasActiveItem = subsection.items.some((item) => isActive(item.path));
 
                       return (
                         <div key={subsection.key}>
                           <button
                             onClick={() => toggleSection(subsection.key)}
                             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all group
-                              ${
-                                hasActiveItem || isExpanded
-                                  ? "bg-gray-800 text-white"
-                                  : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                              }
+                              ${hasActiveItem || isExpanded
+                                ? "bg-gray-800 text-white"
+                                : "text-gray-300 hover:bg-gray-800 hover:text-white"}
                             `}
                           >
                             <div className="flex items-center space-x-3">
                               <Icon className="w-5 h-5" />
-                              <span className="font-medium">
-                                {subsection.label}
-                              </span>
+                              <span className="font-medium">{subsection.label}</span>
                             </div>
                             <ChevronDown
-                              className={`w-4 h-4 transition-transform ${
-                                isExpanded ? "rotate-180" : ""
-                              }`}
+                              className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
                             />
                           </button>
 
-                          {/* Submenu */}
                           {isExpanded && (
                             <div className="mt-1 ml-6 space-y-0.5 border-l-2 border-gray-800 pl-4 animate-in slide-in-from-top-2 duration-200">
                               {subsection.items.map((item) => (
                                 <button
-                                  key={item.path}
-                                  onClick={() =>
-                                    handleNavigationAttempt(item.path)
-                                  }
+                                  key={item.path + "-" + subsection.key}
+                                  onClick={() => handleNavigationAttempt(item.path)}
                                   className={`w-full text-left px-3 py-2 rounded-lg transition-all text-sm
-                                    ${
-                                      isActive(item.path)
-                                        ? "bg-blue-600 text-white font-medium shadow-lg shadow-blue-600/30"
-                                        : "text-gray-400 hover:bg-gray-800 hover:text-white"
-                                    }
+                                    ${isActive(item.path)
+                                      ? "bg-blue-600 text-white font-medium shadow-lg shadow-blue-600/30"
+                                      : "text-gray-400 hover:bg-gray-800 hover:text-white"}
                                   `}
                                 >
                                   {item.label}
@@ -416,32 +347,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       </aside>
 
       <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 3px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.3);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
         @keyframes scale-in {
-          from {
-            transform: scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
+          from { transform: scale(0.95); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
         }
-        .animate-scale-in {
-          animation: scale-in 0.2s ease-out;
-        }
+        .animate-scale-in { animation: scale-in 0.2s ease-out; }
       `}</style>
     </>
   );

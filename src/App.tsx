@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import OverviewPage from "./pages/OverviewPage";
@@ -18,6 +19,9 @@ import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCamp
 import BillingPage from "./pages/BillingPage/BillingPage";
 import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
 import SubscriptionPLans from "./pages/SubscriptionPlans/SubscriptionPlans";
+import SelfServeAdsPage from "./pages/SelfServeAdsPage/SelfServeAdsPage";
+import AppWebAdsPage from "./pages/AppWebAdsPage/AppWebAdsPage";
+import AdBillingPage from "./pages/AdBillingPage/AdBillingPage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -44,6 +48,15 @@ const App: React.FC = () => {
   }
 
   return (
+    <>
+    <Toaster
+      position="top-right"
+      toastOptions={{
+        duration: 5000,
+        style: { fontSize: "14px", maxWidth: "420px" },
+        error: { duration: 6000 },
+      }}
+    />
     <Router>
       <Routes>
         {/* Login Route */}
@@ -85,63 +98,22 @@ const App: React.FC = () => {
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
 
-          {/* Quills Ads */}
-          <Route
-            path="app-quills-ads"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
-          <Route
-            path="quills-ads-drafts"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
-          <Route
-            path="quills-ads-history"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
+          {/* In-App Ads */}
+          <Route path="in-app-ads" element={<AppWebAdsPage />} />
+          {/* Redirect old routes */}
+          <Route path="app-web-ads" element={<Navigate to="in-app-ads" replace />} />
+          <Route path="app-web-ads-review" element={<Navigate to="in-app-ads" replace />} />
+          <Route path="app-web-ads-history" element={<Navigate to="in-app-ads" replace />} />
 
           {/* Blog Ads */}
-          <Route path="web-blog-ads" element={<NoPermissionPage feature="Blog Advertising" />} />
-          <Route path="blog-ads-drafts" element={<NoPermissionPage feature="Blog Advertising" />} />
-          <Route
-            path="blog-ads-history"
-            element={<NoPermissionPage feature="Blog Advertising" />}
-          />
+          <Route path="blog-ads" element={<SelfServeAdsPage channel="PUBLIC" />} />
+          {/* Redirect old routes */}
+          <Route path="blog-space" element={<Navigate to="blog-ads" replace />} />
+          <Route path="blog-space-review" element={<Navigate to="blog-ads" replace />} />
+          <Route path="blog-space-history" element={<Navigate to="blog-ads" replace />} />
 
-          {/* Scholarship Ads */}
-          <Route
-            path="web-scholarship-ads"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="mobile-scholarship-ads"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="scholarship-ads-drafts"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="scholarship-ads-history"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-
-          {/* Library Ads */}
-          <Route
-            path="web-library-ads"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="mobile-library-ads"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="library-ads-drafts"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="library-ads-history"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
+          {/* Ad Wallet Billing (shared for App & Web Ads + Blog Space) */}
+          <Route path="ad-billing" element={<AdBillingPage />} />
 
           {/* Settings & Others */}
           <Route path="settings" element={<SettingsPage onLogout={handleLogout} />} />
@@ -166,6 +138,7 @@ const App: React.FC = () => {
         />
       </Routes>
     </Router>
+    </>
   );
 };
 
