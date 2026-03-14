@@ -8,7 +8,6 @@ import CreateCampaignPage from "./pages/CreateCampaignPage/CreateCampaignPage";
 import DraftsPage from "./pages/DraftsPage/DraftsPage";
 import PendingCampaignsPage from "./pages/PendingCampaignsPage/PendingCampaignsPage";
 import HistoryPage from "./pages/HistoryPage/HistoryPage";
-import NoPermissionPage from "./components/NoPermissionPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage/ContactUsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -22,13 +21,55 @@ import SubscriptionPLans from "./pages/SubscriptionPlans/SubscriptionPlans";
 import SelfServeAdsPage from "./pages/SelfServeAdsPage/SelfServeAdsPage";
 import AppWebAdsPage from "./pages/AppWebAdsPage/AppWebAdsPage";
 import AdBillingPage from "./pages/AdBillingPage/AdBillingPage";
+import { AuthStorage } from "./utils/authStorage";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("abs_token");
-    setIsAuthenticated(!!token);
+    const syncMobileSession = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const mtoken = params.get("mtoken");
+
+      if (!mtoken) {
+        const token = localStorage.getItem("abs_token");
+        setIsAuthenticated(!!token);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_APP_BASE_URL}/abs-plus/mobile-session/${mtoken}`,
+        );
+        const json = await response.json();
+
+        if (json?.success && json?.data?.token) {
+          AuthStorage.setAuthData({
+            token: json.data.token,
+            userId: json.data.userId ?? "",
+            email: json.data.email ?? "",
+            isProfileCompleted: Boolean(json.data.isProfileCompleted),
+            isEmail_verified: true,
+            remark: "mobile-session",
+            studentType: "Undergraduate",
+          });
+
+          params.delete("mtoken");
+          const nextSearch = params.toString();
+          const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+          window.history.replaceState({}, "", nextUrl);
+          setIsAuthenticated(true);
+          return;
+        }
+      } catch (error) {
+        console.error("Failed to exchange mobile session token", error);
+      }
+
+      const token = localStorage.getItem("abs_token");
+      setIsAuthenticated(!!token);
+    };
+
+    syncMobileSession();
   }, []);
 
   const handleLogout = () => {
