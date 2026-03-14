@@ -7,6 +7,7 @@ import { AuthStorage } from "../utils/authStorage";
 import { Bell } from "lucide-react";
 import { useGetUnreadCountQuery } from "../redux/notifications/notification-apis";
 import { useGetStudentDetailsQuery } from "../redux/user/user-apis";
+import { useGetCampaignStatisticsQuery } from "../redux/campaign/campaign-api";
 
 interface DashboardLayoutProps {
   onLogout: () => void;
@@ -15,7 +16,10 @@ interface DashboardLayoutProps {
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
   const { data: unreadData } = useGetUnreadCountQuery({});
   const { data: userData, isLoading: userLoading } = useGetStudentDetailsQuery();
+  const { error: statsError } = useGetCampaignStatisticsQuery();
   const notificationCount = unreadData?.data?.unreadCount || 0;
+  // If the stats endpoint returns 403, user does not have email campaign access
+  const hasEmailAccess = !(statsError && "status" in statsError && statsError.status === 403);
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -95,6 +99,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
         onLogout={onLogout}
         isMobileOpen={isMobileOpen}
         onCloseMobile={() => setIsMobileOpen(false)}
+        hasEmailAccess={hasEmailAccess}
       />
 
       <div className="flex-1 flex flex-col overflow-hidden">

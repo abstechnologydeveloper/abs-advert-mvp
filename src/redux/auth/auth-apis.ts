@@ -14,9 +14,17 @@ export const authServiceApis = createApi({
   endpoints: (builder) => ({
     loginUser: builder.mutation({
       query: (credentials) => ({
-        url: "/ads/auth/login",
+        url: "/login",
         method: "POST",
         body: credentials,
+      }),
+      invalidatesTags: ["Auth"],
+    }),
+    loginWithGoogle: builder.mutation({
+      query: (body: { email: string }) => ({
+        url: "/auth/google/success-in",
+        method: "POST",
+        body: { email: body.email, userDeviceToken: "no-token" },
       }),
       invalidatesTags: ["Auth"],
     }),
@@ -30,4 +38,4 @@ export const authServiceApis = createApi({
   }),
 });
 
-export const { useLoginUserMutation, useContactUsMutation } = authServiceApis;
+export const { useLoginUserMutation, useLoginWithGoogleMutation, useContactUsMutation } = authServiceApis;
