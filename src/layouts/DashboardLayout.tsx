@@ -15,11 +15,18 @@ interface DashboardLayoutProps {
 
 const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) => {
   const { data: unreadData } = useGetUnreadCountQuery({});
-  const { data: userData, isLoading: userLoading } = useGetStudentDetailsQuery();
-  const { error: statsError } = useGetCampaignStatisticsQuery();
+  const { data: userData, isLoading: userLoading } = useGetStudentDetailsQuery(undefined);
+  const { error: statsError } = useGetCampaignStatisticsQuery(undefined);
   const notificationCount = unreadData?.data?.unreadCount || 0;
   // If the stats endpoint returns 403, user does not have email campaign access
-  const hasEmailAccess = !(statsError && "status" in statsError && statsError.status === 403);
+  const statsStatus =
+    typeof statsError === "object" &&
+    statsError !== null &&
+    "status" in statsError &&
+    typeof (statsError as { status?: unknown }).status === "number"
+      ? ((statsError as { status?: number }).status ?? undefined)
+      : undefined;
+  const hasEmailAccess = statsStatus !== 403;
 
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
