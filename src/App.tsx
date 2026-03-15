@@ -22,50 +22,39 @@ import SelfServeAdsPage from "./pages/SelfServeAdsPage/SelfServeAdsPage";
 import AppWebAdsPage from "./pages/AppWebAdsPage/AppWebAdsPage";
 import AdBillingPage from "./pages/AdBillingPage/AdBillingPage";
 import { AuthStorage } from "./utils/authStorage";
+import { exchangeMobileSession } from "./utils/mobileSessionExchange";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [handoffEmail, setHandoffEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const syncMobileSession = async () => {
       const params = new URLSearchParams(window.location.search);
       const mtoken = params.get("mtoken");
+      const baseUrl = import.meta.env.VITE_APP_BASE_URL;
 
       if (!mtoken) {
-        const token = localStorage.getItem("abs_token");
+        const token = AuthStorage.getToken();
         setIsAuthenticated(!!token);
         return;
       }
 
       try {
-        const response = await fetch(
-          `${import.meta.env.VITE_APP_BASE_URL}/abs-plus/mobile-session/${mtoken}`,
-        );
-        const json = await response.json();
+        const result = await exchangeMobileSession({ mtoken, baseUrl });
+        setHandoffEmail(result.email);
 
-        if (json?.success && json?.data?.token) {
-          AuthStorage.setAuthData({
-            token: json.data.token,
-            userId: json.data.userId ?? "",
-            email: json.data.email ?? "",
-            isProfileCompleted: Boolean(json.data.isProfileCompleted),
-            isEmail_verified: true,
-            remark: "mobile-session",
-            studentType: "Undergraduate",
-          });
-
-          params.delete("mtoken");
-          const nextSearch = params.toString();
-          const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
-          window.history.replaceState({}, "", nextUrl);
-          setIsAuthenticated(true);
-          return;
-        }
+        params.delete("mtoken");
+        const nextSearch = params.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+        window.history.replaceState({}, "", nextUrl);
+        setIsAuthenticated(true);
+        return;
       } catch (error) {
         console.error("Failed to exchange mobile session token", error);
       }
 
-      const token = localStorage.getItem("abs_token");
+      const token = AuthStorage.getToken();
       setIsAuthenticated(!!token);
     };
 
@@ -82,7 +71,9 @@ const App: React.FC = () => {
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="flex flex-col items-center space-y-3">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
-          <p className="text-gray-600 text-sm font-medium">Checking your session...</p>
+          <p className="text-gray-600 text-sm font-medium">
+            {handoffEmail ? `Signing in as ${handoffEmail}...` : "Checking your session..."}
+          </p>
         </div>
       </div>
     );
