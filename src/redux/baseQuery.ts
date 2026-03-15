@@ -10,7 +10,10 @@ const rawBaseQuery = fetchBaseQuery({
     if (token) {
       headers.set("Authorization", `Bearer ${token}`);
     }
-    headers.set("Content-Type", "application/json; charset=utf-8");
+    // NOTE: Do NOT set Content-Type here globally.
+    // - For JSON bodies, fetchBaseQuery sets "application/json" automatically.
+    // - For FormData bodies, the browser must set "multipart/form-data" itself
+    //   (with the correct boundary string). Overriding it here would break uploads.
     return headers;
   },
   paramsSerializer: (params) => qs.stringify(params, { arrayFormat: "brackets" }),
@@ -29,7 +32,7 @@ const baseQueryWithErrorHandling: BaseQueryFn<any, unknown, unknown> = async (
     const status = (result.error as any)?.status;
     const data = (result.error as any)?.data;
 
-    // ✅ Handle unauthorized access (token expired / invalid)
+    // ✅ Handle unauthorized access (token expired / invalid) — NOT permission errors (403)
     if (status === 401) {
       AuthStorage.clearAuth();
       window.location.href = "/login";

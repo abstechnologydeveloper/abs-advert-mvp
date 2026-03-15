@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 import LoginPage from "./pages/LoginPage";
 import DashboardLayout from "./layouts/DashboardLayout";
 import OverviewPage from "./pages/OverviewPage";
@@ -7,7 +8,6 @@ import CreateCampaignPage from "./pages/CreateCampaignPage/CreateCampaignPage";
 import DraftsPage from "./pages/DraftsPage/DraftsPage";
 import PendingCampaignsPage from "./pages/PendingCampaignsPage/PendingCampaignsPage";
 import HistoryPage from "./pages/HistoryPage/HistoryPage";
-import NoPermissionPage from "./components/NoPermissionPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage/ContactUsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -18,13 +18,47 @@ import ScheduledCampaignsPage from "./pages/ScheduledCampaignsPage/ScheduledCamp
 import BillingPage from "./pages/BillingPage/BillingPage";
 import UnsubscribePage from "./pages/UnsubscribePage/UnsubscribePage";
 import SubscriptionPLans from "./pages/SubscriptionPlans/SubscriptionPlans";
+import SelfServeAdsPage from "./pages/SelfServeAdsPage/SelfServeAdsPage";
+import AppWebAdsPage from "./pages/AppWebAdsPage/AppWebAdsPage";
+import AdBillingPage from "./pages/AdBillingPage/AdBillingPage";
+import { AuthStorage } from "./utils/authStorage";
+import { exchangeMobileSession } from "./utils/mobileSessionExchange";
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [handoffEmail, setHandoffEmail] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("abs_token");
-    setIsAuthenticated(!!token);
+    const syncMobileSession = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const mtoken = params.get("mtoken");
+      const baseUrl = import.meta.env.VITE_APP_BASE_URL;
+
+      if (!mtoken) {
+        const token = AuthStorage.getToken();
+        setIsAuthenticated(!!token);
+        return;
+      }
+
+      try {
+        const result = await exchangeMobileSession({ mtoken, baseUrl });
+        setHandoffEmail(result.email);
+
+        params.delete("mtoken");
+        const nextSearch = params.toString();
+        const nextUrl = `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`;
+        window.history.replaceState({}, "", nextUrl);
+        setIsAuthenticated(true);
+        return;
+      } catch (error) {
+        console.error("Failed to exchange mobile session token", error);
+      }
+
+      const token = AuthStorage.getToken();
+      setIsAuthenticated(!!token);
+    };
+
+    syncMobileSession();
   }, []);
 
   const handleLogout = () => {
@@ -37,13 +71,24 @@ const App: React.FC = () => {
       <div className="flex items-center justify-center h-screen bg-gray-50">
         <div className="flex flex-col items-center space-y-3">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-blue-500 border-solid"></div>
-          <p className="text-gray-600 text-sm font-medium">Checking your session...</p>
+          <p className="text-gray-600 text-sm font-medium">
+            {handoffEmail ? `Signing in as ${handoffEmail}...` : "Checking your session..."}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
+    <>
+    <Toaster
+      position="top-right"
+      toastOptions={{
+        duration: 5000,
+        style: { fontSize: "14px", maxWidth: "420px" },
+        error: { duration: 6000 },
+      }}
+    />
     <Router>
       <Routes>
         {/* Login Route */}
@@ -85,63 +130,22 @@ const App: React.FC = () => {
           {/* Notifications */}
           <Route path="notifications" element={<NotificationPage />} />
 
-          {/* Quills Ads */}
-          <Route
-            path="app-quills-ads"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
-          <Route
-            path="quills-ads-drafts"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
-          <Route
-            path="quills-ads-history"
-            element={<NoPermissionPage feature="Quills Advertising" />}
-          />
+          {/* In-App Ads */}
+          <Route path="in-app-ads" element={<AppWebAdsPage />} />
+          {/* Redirect old routes */}
+          <Route path="app-web-ads" element={<Navigate to="in-app-ads" replace />} />
+          <Route path="app-web-ads-review" element={<Navigate to="in-app-ads" replace />} />
+          <Route path="app-web-ads-history" element={<Navigate to="in-app-ads" replace />} />
 
           {/* Blog Ads */}
-          <Route path="web-blog-ads" element={<NoPermissionPage feature="Blog Advertising" />} />
-          <Route path="blog-ads-drafts" element={<NoPermissionPage feature="Blog Advertising" />} />
-          <Route
-            path="blog-ads-history"
-            element={<NoPermissionPage feature="Blog Advertising" />}
-          />
+          <Route path="blog-ads" element={<SelfServeAdsPage channel="PUBLIC" />} />
+          {/* Redirect old routes */}
+          <Route path="blog-space" element={<Navigate to="blog-ads" replace />} />
+          <Route path="blog-space-review" element={<Navigate to="blog-ads" replace />} />
+          <Route path="blog-space-history" element={<Navigate to="blog-ads" replace />} />
 
-          {/* Scholarship Ads */}
-          <Route
-            path="web-scholarship-ads"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="mobile-scholarship-ads"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="scholarship-ads-drafts"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-          <Route
-            path="scholarship-ads-history"
-            element={<NoPermissionPage feature="Scholarship Advertising" />}
-          />
-
-          {/* Library Ads */}
-          <Route
-            path="web-library-ads"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="mobile-library-ads"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="library-ads-drafts"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
-          <Route
-            path="library-ads-history"
-            element={<NoPermissionPage feature="Library Advertising" />}
-          />
+          {/* Ad Wallet Billing (shared for App & Web Ads + Blog Space) */}
+          <Route path="ad-billing" element={<AdBillingPage />} />
 
           {/* Settings & Others */}
           <Route path="settings" element={<SettingsPage onLogout={handleLogout} />} />
@@ -166,6 +170,7 @@ const App: React.FC = () => {
         />
       </Routes>
     </Router>
+    </>
   );
 };
 
