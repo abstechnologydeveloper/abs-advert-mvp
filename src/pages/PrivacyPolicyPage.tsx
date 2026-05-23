@@ -59,15 +59,15 @@ const PrivacyPolicyPage: React.FC = () => {
         "The platform supports Email Campaigns (for approved partners), App & Web Ads, and Blog Space Ads - all subject to review and approval by the AbS team before going live.",
         "All submissions must comply with AbS campaign guidelines, content policies, and NDPR standards.",
         "Advertiser access credentials are unique, monitored, and protected against unauthorized use.",
-        "Budget deductions are handled through the AbS Ads Wallet, which is funded via Paystack. Advertisers are responsible for maintaining sufficient wallet balance for active campaigns.",
+        "Budget deductions are handled through the AbS Ads Wallet, which is funded through secure checkout. Advertisers are responsible for maintaining sufficient wallet balance for active campaigns.",
       ],
     },
     {
       title: "6. Ad Wallet and Payments",
       content: [
-        "The AbS Ads platform uses a prepaid wallet system for App & Web Ads and Blog Space Ads. Advertisers fund their wallet via Paystack before launching campaigns.",
+        "The AbS Ads platform uses a prepaid wallet system for App & Web Ads and Blog Space Ads. Advertisers fund their wallet through secure checkout before launching campaigns.",
         "Email Campaign billing is managed separately via the Email Campaign subscription system.",
-        "All payment processing is handled securely by Paystack in accordance with their terms of service and PCI-DSS standards.",
+        "All payment processing is handled by secure payment providers in accordance with their terms of service and PCI-DSS standards.",
         "AbS does not store any credit card or bank account details on its servers.",
         "Wallet top-ups are non-refundable once credited, except in cases of verified technical error. Contact support@abstechconnect.com for refund inquiries.",
       ],

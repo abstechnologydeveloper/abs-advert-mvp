@@ -13,7 +13,8 @@ import {
   XCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   useGetAdWalletQuery,
   useFundAdWalletMutation,
@@ -76,15 +77,36 @@ const TransactionRow: React.FC<{ tx: SelfServeAdWalletTransaction }> = ({ tx }) 
   );
 };
 
+const PAYMENT_REFRESH_DELAYS_MS = [0, 1500, 3500, 6500, 10000, 15000, 22000];
+
 const AdBillingPage: React.FC = () => {
   const [showFundModal, setShowFundModal] = useState(false);
   const [fundAmount, setFundAmount] = useState("");
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const { data, isLoading, refetch } = useGetAdWalletQuery();
   const [fundWallet, { isLoading: isFunding }] = useFundAdWalletMutation();
 
   const wallet = data?.data?.wallet;
   const transactions: SelfServeAdWalletTransaction[] = data?.data?.transactions ?? [];
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("payment") !== "callback" && params.get("funded") !== "1") {
+      return;
+    }
+
+    toast.success("Payment submitted. Refreshing your ad wallet...");
+    setShowFundModal(false);
+    const timers = PAYMENT_REFRESH_DELAYS_MS.map((delay) =>
+      window.setTimeout(() => {
+        void refetch();
+      }, delay),
+    );
+    navigate("/dashboard/ad-billing", { replace: true });
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [location.search, navigate, refetch]);
 
   const handleFund = async () => {
     const amount = Number(fundAmount);
@@ -95,7 +117,7 @@ const AdBillingPage: React.FC = () => {
     try {
       const res = await fundWallet({
         amountNGN: amount,
-        callbackUrl: `${window.location.origin}/dashboard/ad-billing`,
+        callbackUrl: `${window.location.origin}/dashboard/ad-billing?payment=callback&funded=1`,
       }).unwrap();
       window.location.href = res.data.authorizationUrl;
     } catch (err: any) {
@@ -251,7 +273,7 @@ const AdBillingPage: React.FC = () => {
                 className="flex-1 px-4 py-2.5 bg-[#6E58FF] text-white rounded-xl hover:bg-[#5843e0] transition font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {isFunding && <Loader2 className="w-4 h-4 animate-spin" />}
-                {isFunding ? "Redirecting..." : "Pay with Paystack"}
+                {isFunding ? "Redirecting..." : "Continue to payment"}
               </button>
             </div>
           </div>

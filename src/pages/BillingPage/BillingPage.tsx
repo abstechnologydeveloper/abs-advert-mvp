@@ -13,6 +13,10 @@ import {
   useGetWalletBalanceQuery,
   useGetActiveSubscriptionsQuery,
 } from "../../redux/biling/billing-api";
+import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
+
+const PAYMENT_REFRESH_DELAYS_MS = [0, 1500, 3500, 6500, 10000, 15000, 22000];
 
 const BillingPageContent: React.FC = () => {
   // Email campaign type is fixed — no other campaign types shown here
@@ -31,16 +35,18 @@ const BillingPageContent: React.FC = () => {
     isLoading,
     isSubscribing,
   } = useBilling();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-useEffect(() => {
-  const handleSwitchTab = (event: Event) => {
-    const customEvent = event as CustomEvent<"overview" | "plans" | "history">;
-    setActiveTab(customEvent.detail);
-  };
+  useEffect(() => {
+    const handleSwitchTab = (event: Event) => {
+      const customEvent = event as CustomEvent<"overview" | "plans" | "history">;
+      setActiveTab(customEvent.detail);
+    };
 
-  window.addEventListener("switchTab", handleSwitchTab);
-  return () => window.removeEventListener("switchTab", handleSwitchTab);
-}, [setActiveTab]);
+    window.addEventListener("switchTab", handleSwitchTab);
+    return () => window.removeEventListener("switchTab", handleSwitchTab);
+  }, [setActiveTab]);
 
   // Change Plan Modal State
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
@@ -48,12 +54,28 @@ useEffect(() => {
     useState<string>("");
 
   // Fetch wallet balance
-  const { data: walletData } = useGetWalletBalanceQuery(undefined);
+  const { data: walletData, refetch: refetchWalletBalance } =
+    useGetWalletBalanceQuery(undefined);
   const walletBalance = walletData?.data?.balance ?? walletData?.balance ?? 0;
 
   // Fetch active subscriptions
   const { data: activeSubscriptionsData, isLoading: isLoadingSubscriptions } =
     useGetActiveSubscriptionsQuery(undefined);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("payment") !== "callback" && params.get("funded") !== "1") return;
+    toast.success("Payment submitted. Refreshing your wallet...");
+    setShowFundModal(false);
+    localStorage.removeItem("pending_transaction");
+    const timers = PAYMENT_REFRESH_DELAYS_MS.map((delay) =>
+      window.setTimeout(() => {
+        void refetchWalletBalance();
+      }, delay),
+    );
+    navigate("/dashboard/billing", { replace: true });
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, [location.search, navigate, refetchWalletBalance, setShowFundModal]);
 
   const activeSubscriptions = activeSubscriptionsData?.data || [];
   console.log("activeSubscriptionData", activeSubscriptions);

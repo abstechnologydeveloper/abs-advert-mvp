@@ -24,7 +24,7 @@ const AdWalletCard: React.FC = () => {
     try {
       const res = await fundWallet({
         amountNGN: amount,
-        callbackUrl: `${window.location.origin}/dashboard/ad-billing`,
+        callbackUrl: `${window.location.origin}/dashboard/ad-billing?payment=callback&funded=1`,
       }).unwrap();
       window.location.href = res.data.authorizationUrl;
     } catch (err: any) {
@@ -141,7 +141,7 @@ const AdWalletCard: React.FC = () => {
                 className="flex-1 px-4 py-2.5 bg-[#6E58FF] text-white rounded-xl hover:bg-[#5843e0] transition font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
                 {isFunding ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {isFunding ? "Redirecting..." : "Pay with Paystack"}
+                {isFunding ? "Redirecting..." : "Continue to payment"}
               </button>
             </div>
           </div>

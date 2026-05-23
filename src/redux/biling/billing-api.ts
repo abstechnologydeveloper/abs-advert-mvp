@@ -36,7 +36,7 @@ export const billingServiceApis = api.injectEndpoints({
         };
         message?: string;
       },
-      { amount: number; callback_url: string }
+      { amount: number; callbackUrl?: string; callback_url?: string }
     >({
       query: (data) => ({
         url: `/ads/billing/wallet/fund`,
