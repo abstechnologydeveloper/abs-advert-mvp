@@ -83,18 +83,28 @@ export const useBilling = () => {
   });
 
   /**
-   * Handle wallet funding with payment gateway
+   * Handle wallet funding with secure checkout.
    */
   const handleFundWallet = async (amount: number): Promise<void> => {
     try {
-      const callbackUrl = `${window.location.origin}/billing/payment-callback`;
+      const callbackUrl = `${window.location.origin}/dashboard/billing?payment=callback&funded=1`;
 
       const response = await initializePayment({
         amount,
+        callbackUrl,
         callback_url: callbackUrl,
       }).unwrap();
 
       if (response.success && response.data?.authorization_url) {
+        localStorage.setItem(
+          "pending_transaction",
+          JSON.stringify({
+            reference: response.data.reference,
+            transactionId: response.data.transactionId,
+            amount,
+            timestamp: new Date().toISOString(),
+          }),
+        );
         window.location.href = response.data.authorization_url;
       } else {
         throw new Error("Failed to initialize payment");

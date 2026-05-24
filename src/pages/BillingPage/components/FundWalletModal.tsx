@@ -1,10 +1,9 @@
 // ==================== components/FundWalletModal.tsx ====================
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { formatCurrency } from "../utils/formatters";
 import { useInitializePaymentMutation } from "../../../redux/biling/billing-api";
 import { toast } from "react-hot-toast";
-import { useNavigate, useLocation } from "react-router-dom";
 
 interface FundWalletModalProps {
   isOpen: boolean;
@@ -21,25 +20,6 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
 }) => {
   const [amount, setAmount] = useState<string>("");
   const [initializePayment, { isLoading }] = useInitializePaymentMutation();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const isCallback = params.get("payment") === "callback";
-
-    if (isCallback) {
-      const transactionData = localStorage.getItem("pending_transaction");
-
-      if (transactionData) {
-        const parsed = JSON.parse(transactionData);
-        console.log("Parsed Transaction:", parsed);
-        toast.success("Payment successful! 🎉 Wallet funded.");
-        localStorage.removeItem("pending_transaction");
-        navigate("/dashboard/billing", { replace: true });
-      }
-    }
-  }, [location, navigate]);
 
   if (!isOpen) return null;
 
@@ -52,9 +32,10 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
     }
 
     try {
-      const callbackUrl = `${window.location.origin}/dashboard/billing?payment=callback`;
+      const callbackUrl = `${window.location.origin}/dashboard/billing?payment=callback&funded=1`;
       const response = await initializePayment({
         amount: parsedAmount,
+        callbackUrl,
         callback_url: callbackUrl,
       }).unwrap();
 
@@ -71,14 +52,8 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
           JSON.stringify(transactionData)
         );
 
-        // Open payment page in new tab
-        window.open(response.data.authorization_url, "_blank");
-
-        // Optional: Show toast notification
-        toast.success("Payment page opened in new tab");
-
-        // Close modal after opening payment page
-        handleClose();
+        toast.success("Redirecting to secure payment...");
+        window.location.assign(response.data.authorization_url);
       } else {
         toast.error("Failed to initialize payment");
       }
@@ -163,7 +138,7 @@ const FundWalletModal: React.FC<FundWalletModalProps> = ({
 
           {/* Footer Note */}
           <p className="text-xs text-gray-500 text-center">
-            Secured by Paystack • Your transaction is encrypted and safe
+            Secure checkout • Your transaction is encrypted and safe
           </p>
         </div>
       </div>
