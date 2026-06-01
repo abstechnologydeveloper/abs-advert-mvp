@@ -104,6 +104,44 @@ interface HandleSaveDraftParams {
   navigate: NavigateFunction;
 }
 
+const hasUnuploadedInlineImages = (html: string) =>
+  /<img\b[^>]*\bsrc=["']data:image\//i.test(html) ||
+  /<img\b[^>]*\bsrc=["']blob:/i.test(html) ||
+  /<img\b[^>]*\bsrc=["']file:/i.test(html) ||
+  /<img\b[^>]*\bdata-uploading=/i.test(html) ||
+  /\bdata-upload-id=/i.test(html);
+
+const EMAIL_IMAGE_STYLE =
+  "display:block;max-width:100%;height:auto;border:0;border-radius:14px;margin:18px auto;";
+
+const readAttribute = (attributes: string, name: string) => {
+  const match = attributes.match(new RegExp(`\\s${name}=(["'])(.*?)\\1`, "i"));
+  return match?.[2]?.trim() || "";
+};
+
+const sanitizeEditorImagesForEmail = (html: string) =>
+  html.replace(/<img\b([^>]*)>/gi, (_match, attributes: string) => {
+    const src = readAttribute(attributes, "src");
+    if (!src || !/^https:\/\//i.test(src)) {
+      return "";
+    }
+
+    const cleanedAttributes = attributes
+      .replace(/\sdata-uploading=(["']).*?\1/gi, "")
+      .replace(/\sdata-upload-id=(["']).*?\1/gi, "")
+      .replace(/\salt=(["']).*?\1/gi, "")
+      .replace(/\sstyle=(["']).*?\1/gi, "");
+
+    return `<img${cleanedAttributes} alt="AbS campaign image" style="${EMAIL_IMAGE_STYLE}">`;
+  });
+
+const showPendingImageToast = (setToast: (toast: Toast | null) => void) => {
+  setToast({
+    message: "Please wait for inserted images to finish uploading before saving or submitting.",
+    type: "error",
+  });
+};
+
 export const handleSaveDraft = async ({
   formData,
   editor,
@@ -125,11 +163,16 @@ export const handleSaveDraft = async ({
 
   try {
     const rawContent = editor?.getHTML() || "";
+    if (hasUnuploadedInlineImages(rawContent)) {
+      showPendingImageToast(setToast);
+      return;
+    }
+    const safeContent = sanitizeEditorImagesForEmail(rawContent);
 
     const draftFormData = new FormData();
     draftFormData.append("name", formData.name);
     draftFormData.append("subject", formData.subject);
-    draftFormData.append("content", rawContent);
+    draftFormData.append("content", safeContent);
     draftFormData.append("targetAll", String(formData.targetAll));
     draftFormData.append("campaignType", formData.campaignType);
     draftFormData.append("sendNow", String(formData.sendNow));
@@ -217,6 +260,10 @@ export const handleSubmit = async ({
     setToast({ message: "Please add email content", type: "error" });
     return;
   }
+  if (hasUnuploadedInlineImages(rawContent)) {
+    showPendingImageToast(setToast);
+    return;
+  }
 
   // Validate schedule time if scheduled
   if (formData.sendAt) {
@@ -234,7 +281,8 @@ export const handleSubmit = async ({
   }
 
   try {
-    const finalEmailContent = wrapEmailTemplate(rawContent, formData.subject);
+    const safeContent = sanitizeEditorImagesForEmail(rawContent);
+    const finalEmailContent = wrapEmailTemplate(safeContent, formData.subject);
 
     const campaignData = new FormData();
     campaignData.append("name", formData.name);
