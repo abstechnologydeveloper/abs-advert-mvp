@@ -37,6 +37,75 @@ import { getMaxEndDate, useCampaignForm } from "./hooks/useCampaignForm";
 import { handleSchedule, handleSaveDraft, handleSubmit } from "./utils/campaignHandlers";
 import { Toast, MINIMUM_SCHEDULE_HOURS } from "./types/campaign.types";
 
+const EMAIL_INLINE_IMAGE_MAX_EDGE = 1600;
+const EMAIL_INLINE_IMAGE_QUALITY = 0.86;
+
+const loadImageFromDataUrl = (dataUrl: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not prepare image for email"));
+    image.src = dataUrl;
+  });
+
+const toEmailInlineImageFile = async (file: File, dataUrl: string): Promise<File> => {
+  if (!file.type.startsWith("image/")) return file;
+
+  const sourceImage = await loadImageFromDataUrl(dataUrl);
+  const sourceWidth = sourceImage.naturalWidth || sourceImage.width;
+  const sourceHeight = sourceImage.naturalHeight || sourceImage.height;
+  const scale = Math.min(1, EMAIL_INLINE_IMAGE_MAX_EDGE / Math.max(sourceWidth, sourceHeight));
+  const width = Math.max(1, Math.round(sourceWidth * scale));
+  const height = Math.max(1, Math.round(sourceHeight * scale));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Could not prepare image for email");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, width, height);
+  context.drawImage(sourceImage, 0, 0, width, height);
+
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => {
+        if (result) resolve(result);
+        else reject(new Error("Could not prepare image for email"));
+      },
+      "image/jpeg",
+      EMAIL_INLINE_IMAGE_QUALITY
+    );
+  });
+
+  const baseName = file.name.replace(/\.[^.]+$/, "") || "campaign-image";
+  return new File([blob], `${baseName}.jpg`, {
+    type: "image/jpeg",
+    lastModified: Date.now(),
+  });
+};
+
+const extractUploadedImageUrl = (response: any): string | null => {
+  const firstDataItem = Array.isArray(response?.data) ? response.data[0] : response?.data;
+  const candidates = [
+    firstDataItem?.url,
+    firstDataItem?.secure_url,
+    firstDataItem?.secureUrl,
+    response?.url,
+    response?.secure_url,
+    response?.secureUrl,
+  ];
+
+  const url = candidates.find((value) => typeof value === "string" && value.trim());
+  if (!url) return null;
+
+  const trimmed = url.trim();
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  return /^https:\/\//i.test(trimmed) ? trimmed : null;
+};
+
 const CreateCampaignPage: React.FC = () => {
   const navigate = useNavigate();
 
@@ -49,6 +118,7 @@ const CreateCampaignPage: React.FC = () => {
   const [endDate, setEndDate] = useState("");
   const [endTime, setEndTime] = useState("");
   const [toast, setToast] = useState<Toast | null>(null);
+  const [pendingImageUploads, setPendingImageUploads] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -200,6 +270,8 @@ const CreateCampaignPage: React.FC = () => {
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
+    const emailImageAlt = "AbS campaign image";
+    setPendingImageUploads((count) => count + 1);
     const uploadId =
       typeof crypto !== "undefined" && "randomUUID" in crypto
         ? crypto.randomUUID()
@@ -237,18 +309,20 @@ const CreateCampaignPage: React.FC = () => {
         .focus()
         .setImage({
           src: dataUrl,
-          alt: `Uploading ${file.name}`,
+          alt: "Uploading image",
           uploading: "true",
           uploadId,
         } as any)
         .run();
 
+      const emailSafeFile = await toEmailInlineImageFile(file, dataUrl);
       const formData = new FormData();
-      formData.append("attachments", file);
+      formData.append("attachments", emailSafeFile);
+      formData.append("purpose", "email-inline");
       const response = await uploadAttachments(formData).unwrap();
 
-      const imageUrl = response.data[0]?.url;
-      if (!imageUrl) throw new Error("Upload failed - no URL returned");
+      const imageUrl = extractUploadedImageUrl(response);
+      if (!imageUrl) throw new Error("Upload failed - no public HTTPS URL returned");
 
       const { state } = editor;
       let imagePos: number | null = null;
@@ -264,7 +338,7 @@ const CreateCampaignPage: React.FC = () => {
         const { tr } = state;
         tr.setNodeMarkup(imagePos, undefined, {
           src: imageUrl,
-          alt: file.name,
+          alt: emailImageAlt,
           uploading: null,
           uploadId: null,
         });
@@ -275,7 +349,7 @@ const CreateCampaignPage: React.FC = () => {
           .focus()
           .setImage({
             src: imageUrl,
-            alt: file.name,
+            alt: emailImageAlt,
           })
           .run();
       }
@@ -288,6 +362,8 @@ const CreateCampaignPage: React.FC = () => {
         type: "error",
       });
       removeUploadingImage();
+    } finally {
+      setPendingImageUploads((count) => Math.max(0, count - 1));
     }
 
     e.target.value = "";
@@ -539,6 +615,15 @@ const CreateCampaignPage: React.FC = () => {
   }
 
   const isSavingOrUpdating = isSavingDraft || isUpdatingDraft;
+  const isImageUploadPending = pendingImageUploads > 0;
+  const isCampaignActionDisabled = isImageUploadPending || isSavingOrUpdating || isSending;
+
+  const showImageUploadPendingToast = () => {
+    setToast({
+      message: "Please wait for inserted images to finish uploading before continuing.",
+      type: "error",
+    });
+  };
 
   const scheduledTime = formData.sendAt
     ? new Date(formData.sendAt).toLocaleString("en-US", {
@@ -611,12 +696,12 @@ const CreateCampaignPage: React.FC = () => {
                     <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                       <button
                         type="button"
-                        onClick={onSaveDraft}
+                        onClick={isImageUploadPending ? showImageUploadPendingToast : onSaveDraft}
                         disabled={isSavingOrUpdating}
                         className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-white bg-white/20 hover:bg-white/30 rounded-lg transition backdrop-blur-sm disabled:opacity-50"
                         title="Save Draft"
                       >
-                        {isSavingOrUpdating ? (
+                        {isSavingOrUpdating || isImageUploadPending ? (
                           <Loader2 size={16} className="animate-spin sm:mr-1" />
                         ) : (
                           <Save size={16} className="sm:mr-1" />
@@ -736,7 +821,13 @@ const CreateCampaignPage: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={() => setPreviewMode(!previewMode)}
+                        onClick={() => {
+                          if (isImageUploadPending) {
+                            showImageUploadPendingToast();
+                            return;
+                          }
+                          setPreviewMode(!previewMode);
+                        }}
                         className="flex items-center justify-center p-2 sm:px-3 sm:py-1.5 text-xs sm:text-sm text-white bg-white/20 hover:bg-white/30 rounded-lg transition backdrop-blur-sm"
                         title="Preview"
                       >
@@ -746,16 +837,22 @@ const CreateCampaignPage: React.FC = () => {
 
                       <button
                         type="button"
-                        onClick={onSubmit}
-                        disabled={isSending}
+                        onClick={isImageUploadPending ? showImageUploadPendingToast : onSubmit}
+                        disabled={isCampaignActionDisabled}
                         className="flex items-center justify-center px-3 sm:px-4 py-2 sm:py-1.5 text-xs sm:text-sm bg-white text-blue-600 hover:bg-gray-50 rounded-lg transition shadow-sm font-semibold disabled:opacity-50"
                       >
-                        {isSending ? (
+                        {isSending || isImageUploadPending ? (
                           <Loader2 size={16} className="mr-1 animate-spin" />
                         ) : (
                           <Send size={16} className="mr-1" />
                         )}
-                        <span>{formData.sendAt ? "Schedule & Submit" : "Submit for Review"}</span>
+                        <span>
+                          {isImageUploadPending
+                            ? "Uploading image"
+                            : formData.sendAt
+                              ? "Schedule & Submit"
+                              : "Submit for Review"}
+                        </span>
                       </button>
                     </div>
                   </div>
