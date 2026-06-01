@@ -10,6 +10,12 @@ import { SlashMenu } from "./components/SlashMenu";
 import { EditorBubbleMenu } from "./components/EditorBubbleMenu";
 import { EmailPreview } from "./components/EmailPreview";
 import {
+  MarketingBlock,
+  MarketingTemplate,
+  TemplateLibrary,
+} from "./components/TemplateLibrary";
+import logo from "../../assets/logo.svg";
+import {
   Eye,
   Send,
   Save,
@@ -194,21 +200,48 @@ const CreateCampaignPage: React.FC = () => {
   const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !editor) return;
+    const uploadId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const removeUploadingImage = () => {
+      const { state } = editor;
+      let imagePos: number | null = null;
+
+      state.doc.descendants((node, pos) => {
+        if (node.type.name === "image" && node.attrs.uploadId === uploadId) {
+          imagePos = pos;
+          return false;
+        }
+      });
+
+      if (imagePos !== null) {
+        const node = state.doc.nodeAt(imagePos);
+        if (node) {
+          editor.view.dispatch(state.tr.delete(imagePos, imagePos + node.nodeSize));
+        }
+      }
+    };
 
     try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        editor
-          .chain()
-          .focus()
-          .setImage({
-            src: dataUrl,
-            alt: "Uploading...",
-          })
-          .run();
-      };
-      reader.readAsDataURL(file);
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => resolve(event.target?.result as string);
+        reader.onerror = () => reject(reader.error || new Error("Could not read image"));
+        reader.readAsDataURL(file);
+      });
+
+      editor
+        .chain()
+        .focus()
+        .setImage({
+          src: dataUrl,
+          alt: `Uploading ${file.name}`,
+          uploading: "true",
+          uploadId,
+        } as any)
+        .run();
 
       const formData = new FormData();
       formData.append("attachments", file);
@@ -221,7 +254,7 @@ const CreateCampaignPage: React.FC = () => {
       let imagePos: number | null = null;
 
       state.doc.descendants((node, pos) => {
-        if (node.type.name === "image" && node.attrs.src.startsWith("data:")) {
+        if (node.type.name === "image" && node.attrs.uploadId === uploadId) {
           imagePos = pos;
           return false;
         }
@@ -232,6 +265,8 @@ const CreateCampaignPage: React.FC = () => {
         tr.setNodeMarkup(imagePos, undefined, {
           src: imageUrl,
           alt: file.name,
+          uploading: null,
+          uploadId: null,
         });
         editor.view.dispatch(tr);
       } else {
@@ -252,7 +287,7 @@ const CreateCampaignPage: React.FC = () => {
         message: error?.data?.message || "Image upload failed",
         type: "error",
       });
-      editor.commands.undo();
+      removeUploadingImage();
     }
 
     e.target.value = "";
@@ -278,6 +313,185 @@ const CreateCampaignPage: React.FC = () => {
 
     setAttachments(updatedAttachments);
     setExistingAttachments(updatedExisting);
+  };
+
+  const normalizeExternalUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
+  const extractYoutubeId = (url: string) => {
+    const patterns = [
+      /youtube\.com\/watch\?v=([^&]+)/i,
+      /youtube\.com\/shorts\/([^?&/]+)/i,
+      /youtu\.be\/([^?&/]+)/i,
+      /youtube\.com\/embed\/([^?&/]+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = url.match(pattern);
+      if (match?.[1]) return match[1];
+    }
+    return "";
+  };
+
+  const insertMarketingTemplate = (template: MarketingTemplate) => {
+    if (!editor) return;
+
+    const existingContent = editor.getText().trim();
+    if (
+      existingContent &&
+      !window.confirm("Replace the current email content with this template?")
+    ) {
+      return;
+    }
+
+    const templates: Record<MarketingTemplate, string> = {
+      update: `
+        <h1>AbS 4.2 is now live</h1>
+        <p>A faster, smarter, and more reliable AbS experience is now available across mobile and web. Students can continue from recent materials, practise with improved tools, and access AbS directly from the browser.</p>
+        <h2>What improved</h2>
+        <ul>
+          <li>Web access for learning from any modern browser.</li>
+          <li>Better Sabi Examiner, Sabi AI, Scholarship, and My Learning workflows.</li>
+          <li>Improved practice stability, loading speed, and study continuity.</li>
+        </ul>
+        <blockquote>
+          <p>We also fixed issues reported in AbS 4.1, including failed CBT practices, practice time loading problems, and occasional system failures.</p>
+        </blockquote>
+        <p><strong>Thank you for your patience and feedback.</strong> Update the app or open AbS on web to continue learning.</p>
+        <p><a href="https://www.abstechconnect.com/">Open AbS 4.2</a></p>
+      `,
+      newsletter: `
+        <h1>This week on AbS</h1>
+        <p>Here are the most useful resources, tools, and opportunities students should check before the week gets busy.</p>
+        <table>
+          <tbody>
+            <tr>
+              <th>Area</th>
+              <th>What to do</th>
+            </tr>
+            <tr>
+              <td>Library</td>
+              <td>Open recently added materials and save the ones linked to your course.</td>
+            </tr>
+            <tr>
+              <td>Sabi AI</td>
+              <td>Ask questions from your study materials when a topic is difficult.</td>
+            </tr>
+            <tr>
+              <td>Scholarships</td>
+              <td>Review new opportunities before deadlines close.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p>Open AbS and continue from where you stopped.</p>
+        <p><a href="https://www.abstechconnect.com/">View this week's updates</a></p>
+      `,
+      offer: `
+        <h1>Study smarter with AbS</h1>
+        <p>Use one place to organise school materials, generate practice, ask AI from study files, and discover academic opportunities.</p>
+        <h2>Start with one action</h2>
+        <table>
+          <tbody>
+            <tr>
+              <td><strong>Upload material</strong><br>Keep important files in My Learning.</td>
+              <td><strong>Ask Sabi AI</strong><br>Get explanations grounded in your study context.</td>
+            </tr>
+            <tr>
+              <td><strong>Practise better</strong><br>Generate questions and review answers.</td>
+              <td><strong>Find opportunities</strong><br>Track scholarships and academic openings.</td>
+            </tr>
+          </tbody>
+        </table>
+        <p><strong>Start with one material today.</strong> Open it, ask a question, and continue learning.</p>
+        <p><a href="https://www.abstechconnect.com/">Continue on AbS</a></p>
+      `,
+      event: `
+        <h1>Join the AbS study update</h1>
+        <p>We are sharing practical ways students can get more value from AbS across Library, My Learning, Sabi AI, Sabi Examiner, and Scholarships.</p>
+        <h2>What you will learn</h2>
+        <ul>
+          <li>How to find useful materials faster.</li>
+          <li>How to use AI with study context.</li>
+          <li>How to keep track of scholarships and study progress.</li>
+        </ul>
+        <p><strong>Best for:</strong> students who want a clearer workflow for reading, practice, and revision.</p>
+        <p><a href="https://www.abstechconnect.com/">Open event details</a></p>
+      `,
+    };
+
+    editor.commands.setContent(templates[template]);
+  };
+
+  const insertMarketingBlock = (block: MarketingBlock) => {
+    if (!editor) return;
+
+    if (block === "youtube") {
+      const rawUrl = window.prompt("Paste YouTube URL:");
+      if (!rawUrl) return;
+      const url = normalizeExternalUrl(rawUrl);
+      const videoId = extractYoutubeId(url);
+      const thumbnail = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : "";
+      editor
+        .chain()
+        .focus()
+        .insertContent(`
+          <h2>Watch the update</h2>
+          <p>
+            <a href="${url}" target="_blank" rel="noopener noreferrer">
+              ${thumbnail ? `<img src="${thumbnail}" alt="Watch video" />` : "Watch video"}
+            </a>
+          </p>
+          <p><a href="${url}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a></p>
+        `)
+        .run();
+      return;
+    }
+
+    const blocks: Record<Exclude<MarketingBlock, "youtube">, string> = {
+      hero: `
+        <h1>Write a clear campaign headline</h1>
+        <p>Use this opening to explain the benefit in one sentence, then tell the reader exactly what action to take next.</p>
+        <p><a href="https://www.abstechconnect.com/">Open AbS</a></p>
+      `,
+      featureGrid: `
+        <h2>Why this matters</h2>
+        <table>
+          <tbody>
+            <tr>
+              <th>Feature</th>
+              <th>Student benefit</th>
+            </tr>
+            <tr>
+              <td>Recent materials</td>
+              <td>Return to the exact resource you were using without searching again.</td>
+            </tr>
+            <tr>
+              <td>Sabi AI tools</td>
+              <td>Ask questions, generate practice, and understand difficult topics faster.</td>
+            </tr>
+          </tbody>
+        </table>
+      `,
+      imageText: `
+        <h2>Show the experience</h2>
+        <p>Add a screenshot or product image from the toolbar, then explain what the reader should notice and how it helps them study.</p>
+        <p><strong>Tip:</strong> use one strong image instead of several attachments. Email readers respond better when the story is clear at a glance.</p>
+      `,
+      testimonial: `
+        <blockquote>
+          <p>Use this space for a short student quote, result, success story, or proof point that makes the message more credible.</p>
+        </blockquote>
+      `,
+      cta: `
+        <h2>Ready to continue?</h2>
+        <p>Open AbS and take the next step from your phone or browser.</p>
+        <p><a href="https://www.abstechconnect.com/">Continue on AbS</a></p>
+      `,
+    };
+
+    editor.chain().focus().insertContent(blocks[block]).run();
   };
 
   const onSaveDraft = () => {
@@ -381,7 +595,7 @@ const CreateCampaignPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
                       <img
-                        src="https://aws-s3-aws-bucket.s3.us-east-1.amazonaws.com/uploads/1762192698428-ABS_New_Logo.jpg"
+                        src={logo}
                         alt="ABS Logo"
                         className="h-7 sm:h-8 w-auto bg-white rounded p-1 flex-shrink-0"
                       />
@@ -550,113 +764,141 @@ const CreateCampaignPage: React.FC = () => {
                 <Toolbar editor={editor} imageInputRef={imageInputRef} />
 
                 <div className="bg-gray-50 min-h-[400px] sm:min-h-[600px]">
-                  <div className="max-w-4xl mx-auto">
-                    <div className="bg-white border-gray-200 overflow-hidden">
-                      <div className="px-4 sm:px-6 py-3 flex items-center justify-between gap-4 bg-gradient-to-r from-blue-50 to-green-50 border-b border-gray-200">
-                        <div className="flex-1">
-                          <p className="text-xs text-gray-500 mb-0.5">Subject:</p>
-                          <p className="text-sm font-semibold text-gray-900 break-words">
-                            {formData.subject || "No subject"}
-                          </p>
-                        </div>
-                        {formData.sendAt && (
-                          <div className="flex items-center gap-2 text-green-700 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
-                            <Clock size={14} />
-                            <span className="text-xs font-medium">Scheduled:</span>
-                            <span className="text-sm font-semibold">{scheduledTime}</span>
-                            <button
-                              onClick={handleClearSchedule}
-                              className="ml-1 text-green-600 hover:text-red-600"
-                              title="Clear Schedule"
-                            >
-                              <X size={14} />
-                            </button>
+                  <div className="grid xl:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="p-3 sm:p-5">
+                      <div className="max-w-4xl mx-auto overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                        <div className="border-b border-gray-200 bg-white px-4 py-4 sm:px-6">
+                          <div className="flex items-center gap-3">
+                            <img
+                              src={logo}
+                              alt="AbS"
+                              className="h-11 w-11 rounded-xl border border-gray-200 bg-white object-contain p-1.5"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-base font-black leading-5 text-slate-950">AbS</p>
+                              <p className="text-xs leading-5 text-slate-500">
+                                Absolute Solution campaign email
+                              </p>
+                            </div>
                           </div>
-                        )}
+                        </div>
+
+                        <div className="px-4 sm:px-6 py-3 flex flex-col gap-3 bg-gradient-to-r from-blue-50 to-emerald-50 border-b border-gray-200 md:flex-row md:items-center md:justify-between">
+                          <div className="flex-1">
+                            <p className="text-xs text-gray-500 mb-0.5">Subject:</p>
+                            <p className="text-sm font-semibold text-gray-900 break-words">
+                              {formData.subject || "No subject"}
+                            </p>
+                          </div>
+                          {formData.sendAt && (
+                            <div className="flex flex-wrap items-center gap-2 text-green-700 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
+                              <Clock size={14} />
+                              <span className="text-xs font-medium">Scheduled:</span>
+                              <span className="text-sm font-semibold">{scheduledTime}</span>
+                              <button
+                                onClick={handleClearSchedule}
+                                className="ml-1 text-green-600 hover:text-red-600"
+                                title="Clear Schedule"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div
+                          className="p-4 sm:p-6 relative min-h-[360px] sm:min-h-[500px]"
+                          ref={editorRef}
+                        >
+                          <EditorContent editor={editor} />
+                          <EditorBubbleMenu editor={editor} imageInputRef={imageInputRef} />
+                          {showSlashMenu && (
+                            <>
+                              <div
+                                className="fixed inset-0 z-40"
+                                onClick={() => setShowSlashMenu(false)}
+                              />
+                              <SlashMenu
+                                editor={editor}
+                                position={slashMenuPosition}
+                                onClose={() => setShowSlashMenu(false)}
+                                imageInputRef={imageInputRef}
+                              />
+                            </>
+                          )}
+                        </div>
+
+                        <div className="bg-gray-900 text-white p-4 sm:p-5 border-t border-gray-800">
+                          <div className="text-center">
+                            <h3 className="text-sm sm:text-base font-bold mb-1.5">About AbS</h3>
+                            <p className="text-gray-300 text-xs mb-2 max-w-2xl mx-auto leading-relaxed">
+                              Your comprehensive educational platform for academic materials,
+                              scholarships, AI tools, and career opportunities.
+                            </p>
+                            <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs mb-2">
+                              <a
+                                href="https://www.abstechconnect.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 transition"
+                              >
+                                Website
+                              </a>
+                              <a
+                                href="https://x.com/ABSTEAM01"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 transition"
+                              >
+                                Twitter
+                              </a>
+                              <a
+                                href="https://www.linkedin.com/company/abstechconnect1/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 transition"
+                              >
+                                LinkedIn
+                              </a>
+                              <a
+                                href="https://web.facebook.com/people/ABS-Solution/61564113997916/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:text-blue-300 transition"
+                              >
+                                Facebook
+                              </a>
+                            </div>
+                            <p className="text-xs text-gray-500 border-t border-gray-700 pt-2 mt-2">
+                              © 2025 AbS. All rights reserved.
+                            </p>
+                          </div>
+                        </div>
                       </div>
 
-                      <div
-                        className="p-4 sm:p-4 relative min-h-[300px] sm:min-h-[400px]"
-                        ref={editorRef}
-                      >
-                        <EditorContent editor={editor} />
-                        <EditorBubbleMenu editor={editor} imageInputRef={imageInputRef} />
-                        {showSlashMenu && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={() => setShowSlashMenu(false)}
-                            />
-                            <SlashMenu
-                              editor={editor}
-                              position={slashMenuPosition}
-                              onClose={() => setShowSlashMenu(false)}
-                              imageInputRef={imageInputRef}
-                            />
-                          </>
-                        )}
-                      </div>
-
-                      <div className="bg-gray-900 text-white p-4 sm:p-5 border-t border-gray-800">
-                        <div className="text-center">
-                          <h3 className="text-sm sm:text-base font-bold mb-1.5">About AbS</h3>
-                          <p className="text-gray-300 text-xs mb-2 max-w-2xl mx-auto leading-relaxed">
-                            Your comprehensive educational platform for academic materials,
-                            scholarships, AI tools, and career opportunities.
-                          </p>
-                          <div className="flex flex-wrap justify-center gap-2 sm:gap-3 text-xs mb-2">
-                            <a
-                              href="https://www.abstechconnect.com/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 transition"
-                            >
-                              Website
-                            </a>
-                            <a
-                              href="https://x.com/ABSTEAM01"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 transition"
-                            >
-                              Twitter
-                            </a>
-                            <a
-                              href="https://www.linkedin.com/company/abstechconnect1/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 transition"
-                            >
-                              LinkedIn
-                            </a>
-                            <a
-                              href="https://web.facebook.com/people/ABS-Solution/61564113997916/"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300 transition"
-                            >
-                              Facebook
-                            </a>
-                          </div>
-                          <p className="text-xs text-gray-500 border-t border-gray-700 pt-2 mt-2">
-                            © 2025 AbS. All rights reserved.
-                          </p>
-                        </div>
+                      <div className="text-center mt-3 sm:mt-4">
+                        <p className="text-xs text-gray-500">
+                          Type <kbd className="px-2 py-1 bg-gray-200 rounded text-xs">/</kbd> to
+                          insert blocks, or use the library beside the editor.
+                        </p>
                       </div>
                     </div>
-                  </div>
-                  <div className="text-center mt-3 sm:mt-4">
-                    <p className="text-xs text-gray-500">
-                      Type <kbd className="px-2 py-1 bg-gray-200 rounded text-xs">/</kbd> to insert
-                      blocks
-                    </p>
+
+                    <TemplateLibrary
+                      onInsertTemplate={insertMarketingTemplate}
+                      onInsertBlock={insertMarketingBlock}
+                    />
                   </div>
                 </div>
               </div>
             </div>
           </div>
         ) : (
-          <EmailPreview editor={editor} onClose={() => setPreviewMode(false)} />
+          <EmailPreview
+            editor={editor}
+            subject={formData.subject}
+            onClose={() => setPreviewMode(false)}
+          />
         )}
       </div>
 

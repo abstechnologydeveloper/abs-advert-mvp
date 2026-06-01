@@ -386,6 +386,12 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 <Upload size={16} />
                 <span>Upload files</span>
               </button>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs font-medium leading-relaxed text-amber-900">
+                  For videos, use the YouTube block in the editor instead of attaching video files.
+                  Video attachments are large, expensive, and often blocked by inboxes.
+                </p>
+              </div>
 
               {existingAttachments.length > 0 && (
                 <div className="space-y-2">

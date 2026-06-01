@@ -78,6 +78,15 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
   const extractEditorContent = (htmlContent: string): string => {
     if (!htmlContent) return "<p></p>";
 
+    const markedContentMatch = htmlContent.match(
+      /<!--\s*ABS_CAMPAIGN_CONTENT_START\s*-->\s*<div[^>]*class=["'][^"']*email-editor-content[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<!--\s*ABS_CAMPAIGN_CONTENT_END\s*-->/i
+    );
+
+    if (markedContentMatch && markedContentMatch[1]) {
+      console.log("✅ Extracted using campaign content markers");
+      return markedContentMatch[1].trim() || "<p></p>";
+    }
+
     // ✅ METHOD 1: Extract from the actual email template (table-based structure)
     // The real email template uses: <td style="padding: 30px 25px;"><div...>CONTENT HERE</div></td>
     const emailTableContentMatch = htmlContent.match(

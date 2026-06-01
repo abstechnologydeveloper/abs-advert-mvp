@@ -1,3 +1,4 @@
+import { mergeAttributes } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Highlight from "@tiptap/extension-highlight";
@@ -49,7 +50,35 @@ export const editorExtensions = [
             };
           },
         },
+        uploadId: {
+          default: null,
+          parseHTML: (element) => element.getAttribute("data-upload-id"),
+          renderHTML: (attributes) => {
+            if (!attributes.uploadId) {
+              return {};
+            }
+            return {
+              "data-upload-id": attributes.uploadId,
+            };
+          },
+        },
       };
+    },
+    renderHTML({ HTMLAttributes }) {
+      const image = ["img", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes)] as const;
+
+      if (!HTMLAttributes["data-uploading"]) {
+        return image;
+      }
+
+      return [
+        "span",
+        {
+          class: "editor-uploading-image-frame",
+          "data-uploading-frame": "true",
+        },
+        image,
+      ];
     },
   }),
   Link.configure({
