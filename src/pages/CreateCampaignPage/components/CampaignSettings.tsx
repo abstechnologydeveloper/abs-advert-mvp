@@ -11,6 +11,7 @@ import {
   ChevronUp,
   AlertCircle,
   ExternalLink,
+  Mail,
 } from "lucide-react";
 import { MultiSelectDropdown } from "../../../components/MultiSelectDropdown";
 
@@ -25,6 +26,7 @@ interface CampaignSettingsProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   institutions: any[];
   isLoadingInstitutions: boolean;
+  campaignSenders?: Array<{ address: string; label: string }>;
 }
 
 export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
@@ -37,6 +39,7 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
   fileInputRef,
   institutions = [],
   isLoadingInstitutions = false,
+  campaignSenders = [],
 }) => {
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
@@ -215,6 +218,39 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                   required
                 />
               </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Sender <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Mail
+                    size={14}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                  />
+                  <select
+                    value={formData.senderAddress}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        senderAddress: e.target.value,
+                        fromEmail: e.target.value,
+                      })
+                    }
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
+                    required
+                  >
+                    {(campaignSenders.length
+                      ? campaignSenders
+                      : [{ address: "career@abstechconnect.com", label: "AbS Career" }]
+                    ).map((sender) => (
+                      <option key={sender.address} value={sender.address}>
+                        {sender.label} - {sender.address}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -386,6 +422,12 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                 <Upload size={16} />
                 <span>Upload files</span>
               </button>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <p className="text-xs font-medium leading-relaxed text-amber-900">
+                  For videos, use the YouTube block in the editor instead of attaching video files.
+                  Video attachments are large, expensive, and often blocked by inboxes.
+                </p>
+              </div>
 
               {existingAttachments.length > 0 && (
                 <div className="space-y-2">

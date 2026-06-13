@@ -29,6 +29,32 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const extractYoutubeId = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return "";
+    const patterns = [
+      /youtube\.com\/watch\?v=([^&]+)/i,
+      /youtube\.com\/shorts\/([^?&/]+)/i,
+      /youtu\.be\/([^?&/]+)/i,
+      /youtube\.com\/embed\/([^?&/]+)/i,
+    ];
+    for (const pattern of patterns) {
+      const match = trimmed.match(pattern);
+      if (match?.[1]) return match[1];
+    }
+    return "";
+  };
+
+  const normalizeExternalUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+  };
+
+  const insertMarketingBlock = (html: string) => {
+    editor.chain().focus().insertContent(html).run();
+  };
+
   // Extract search query from text after slash
   useEffect(() => {
     const { state } = editor;
@@ -88,6 +114,74 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
         case "image":
           imageInputRef.current?.click();
           break;
+        case "marketingHero":
+          insertMarketingBlock(`
+            <h1>Make studying easier with AbS</h1>
+            <p>Give students direct access to the tools, materials, and support they need to learn faster.</p>
+            <p><a href="https://www.abstechconnect.com/">Open AbS</a></p>
+          `);
+          break;
+        case "featureGrid":
+          insertMarketingBlock(`
+            <h2>What students get</h2>
+            <table>
+              <tbody>
+                <tr>
+                  <th>Study materials</th>
+                  <th>AI support</th>
+                </tr>
+                <tr>
+                  <td>Past questions, handouts, uploaded files, notes, and folders.</td>
+                  <td>Ask questions from materials, generate practice, and get clear explanations.</td>
+                </tr>
+                <tr>
+                  <th>Scholarships</th>
+                  <th>Practice tools</th>
+                </tr>
+                <tr>
+                  <td>Local and international opportunities in one place.</td>
+                  <td>CBT, quizzes, worked answers, and revision support.</td>
+                </tr>
+              </tbody>
+            </table>
+          `);
+          break;
+        case "ctaBlock":
+          insertMarketingBlock(`
+            <h2>Ready to continue?</h2>
+            <p>Open AbS on web or mobile and continue from where you stopped.</p>
+            <p><a href="https://www.abstechconnect.com/">Continue on AbS</a></p>
+          `);
+          break;
+        case "offerBlock":
+          insertMarketingBlock(`
+            <h2>Why this matters</h2>
+            <ul>
+              <li>Students can find useful academic materials faster.</li>
+              <li>AI tools help explain difficult topics with context.</li>
+              <li>Progress, recent activity, and study tools stay connected.</li>
+            </ul>
+          `);
+          break;
+        case "youtubeBlock": {
+          const url = window.prompt("Paste a YouTube URL:");
+          if (!url) break;
+          const safeUrl = normalizeExternalUrl(url);
+          const videoId = extractYoutubeId(safeUrl);
+          const thumbnail = videoId
+            ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+            : "";
+          insertMarketingBlock(`
+            <h2>Watch the update</h2>
+            <p>
+              <a href="${safeUrl}" target="_blank" rel="noopener noreferrer">
+                ${thumbnail ? `<img src="${thumbnail}" alt="Watch video" />` : "Watch video"}
+              </a>
+            </p>
+            <p><a href="${safeUrl}" target="_blank" rel="noopener noreferrer">Watch on YouTube</a></p>
+          `);
+          break;
+        }
       }
     }, 10);
 
@@ -171,6 +265,41 @@ export const SlashMenu: React.FC<SlashMenuProps> = ({
       desc: "Upload image",
       action: "image",
       keywords: ["image", "picture", "photo", "img"],
+    },
+    {
+      icon: <Type size={18} />,
+      label: "Opening Banner",
+      desc: "Headline, body, link",
+      action: "marketingHero",
+      keywords: ["hero", "marketing", "headline", "campaign"],
+    },
+    {
+      icon: <Table size={18} />,
+      label: "Benefit Table",
+      desc: "Two-column benefits",
+      action: "featureGrid",
+      keywords: ["features", "benefits", "grid", "blocks"],
+    },
+    {
+      icon: <Quote size={18} />,
+      label: "Value Section",
+      desc: "Value bullets",
+      action: "offerBlock",
+      keywords: ["offer", "value", "bullets", "benefits"],
+    },
+    {
+      icon: <Minus size={18} />,
+      label: "Action Panel",
+      desc: "Main action link",
+      action: "ctaBlock",
+      keywords: ["cta", "button", "link", "action"],
+    },
+    {
+      icon: <Image size={18} />,
+      label: "YouTube Block",
+      desc: "Thumbnail link",
+      action: "youtubeBlock",
+      keywords: ["youtube", "video", "watch", "thumbnail"],
     },
   ];
 

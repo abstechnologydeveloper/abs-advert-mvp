@@ -4,6 +4,8 @@ import { useSearchParams, useParams } from "react-router-dom";
 import { CampaignFormData, MINIMUM_SCHEDULE_HOURS } from "../types/campaign.types";
 import { useGetCampaignByIdQuery } from "../../../redux/campaign/campaign-api";
 
+const DEFAULT_CAMPAIGN_SENDER = "career@abstechconnect.com";
+
 export const useCampaignForm = (editor: any, institutions: any[]) => {
   const [searchParams] = useSearchParams();
   const params = useParams();
@@ -24,8 +26,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
     recurring: false,
     timeSlots: [],
     campaignType: "EMAIL",
+    senderAddress: DEFAULT_CAMPAIGN_SENDER,
     fromName: "AbS",
-    fromEmail: "hello@abstechconnect.com",
+    fromEmail: DEFAULT_CAMPAIGN_SENDER,
   });
 
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -56,8 +59,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
       recurring: false,
       timeSlots: [],
       campaignType: "EMAIL",
+      senderAddress: DEFAULT_CAMPAIGN_SENDER,
       fromName: "AbS",
-      fromEmail: "hello@abstechconnect.com",
+      fromEmail: DEFAULT_CAMPAIGN_SENDER,
     });
     setExistingAttachments([]);
     setAttachments([]);
@@ -77,6 +81,15 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
   // ✅ FIXED: Better content extraction to prevent mirror/doubled content
   const extractEditorContent = (htmlContent: string): string => {
     if (!htmlContent) return "<p></p>";
+
+    const markedContentMatch = htmlContent.match(
+      /<!--\s*ABS_CAMPAIGN_CONTENT_START\s*-->\s*<div[^>]*class=["'][^"']*email-editor-content[^"']*["'][^>]*>([\s\S]*?)<\/div>\s*<!--\s*ABS_CAMPAIGN_CONTENT_END\s*-->/i
+    );
+
+    if (markedContentMatch && markedContentMatch[1]) {
+      console.log("✅ Extracted using campaign content markers");
+      return markedContentMatch[1].trim() || "<p></p>";
+    }
 
     // ✅ METHOD 1: Extract from the actual email template (table-based structure)
     // The real email template uses: <td style="padding: 30px 25px;"><div...>CONTENT HERE</div></td>
@@ -188,8 +201,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
         recurring: campaign.recurring || false,
         timeSlots: Array.isArray(campaign.timeSlots) ? campaign.timeSlots : [],
         campaignType: campaign.campaignType || "EMAIL",
+        senderAddress: campaign.senderAddress || DEFAULT_CAMPAIGN_SENDER,
         fromName: "AbS",
-        fromEmail: "hello@abstechconnect.com",
+        fromEmail: campaign.senderAddress || DEFAULT_CAMPAIGN_SENDER,
       });
 
       editor.commands.setContent(extractedContent);
