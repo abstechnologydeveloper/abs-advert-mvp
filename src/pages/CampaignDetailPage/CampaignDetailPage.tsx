@@ -232,6 +232,16 @@ const CampaignDetailsPage: React.FC = () => {
                 </div>
               </div>
 
+              <div className="flex items-start">
+                <Mail className="text-gray-400 mr-3 mt-0.5 flex-shrink-0" size={20} />
+                <div>
+                  <p className="text-sm text-gray-600">Sender</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {campaign.senderAddress || "career@abstechconnect.com"}
+                  </p>
+                </div>
+              </div>
+
               {campaign.student && (
                 <div className="flex items-start">
                   <Users className="text-gray-400 mr-3 mt-0.5 flex-shrink-0" size={20} />

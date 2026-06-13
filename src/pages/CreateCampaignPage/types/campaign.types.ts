@@ -11,6 +11,7 @@ export interface CampaignFormData {
   recurring: boolean;
   timeSlots: string[];
   campaignType: string;
+  senderAddress: string;
   fromName: string;
   fromEmail: string;
 }

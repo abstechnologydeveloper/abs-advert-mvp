@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import {
   useCreateEmailCampaignMutation,
+  useGetCampaignSendersQuery,
   useGetSchoolsQuery,
   useSaveDraftMutation,
   useUpdateDraftMutation,
@@ -172,8 +173,10 @@ const CreateCampaignPage: React.FC = () => {
   const [saveDraft, { isLoading: isSavingDraft }] = useSaveDraftMutation();
   const [updateDraft, { isLoading: isUpdatingDraft }] = useUpdateDraftMutation();
   const { data: institutionsData, isLoading: isLoadingInstitutions } = useGetSchoolsQuery({});
+  const { data: sendersData } = useGetCampaignSendersQuery({});
   const [uploadAttachments, { isLoading: isUploadingImage }] = useUploadAttachmentsMutation();
   const institutions = institutionsData?.data || [];
+  const campaignSenders = sendersData?.data || [];
   const {
     draftId,
     mode,
@@ -671,6 +674,7 @@ const CreateCampaignPage: React.FC = () => {
                   fileInputRef={fileInputRef}
                   institutions={institutions}
                   isLoadingInstitutions={isLoadingInstitutions}
+                  campaignSenders={campaignSenders}
                 />
               </div>
             </div>
