@@ -4,6 +4,8 @@ import { useSearchParams, useParams } from "react-router-dom";
 import { CampaignFormData, MINIMUM_SCHEDULE_HOURS } from "../types/campaign.types";
 import { useGetCampaignByIdQuery } from "../../../redux/campaign/campaign-api";
 
+const DEFAULT_CAMPAIGN_SENDER = "career@abstechconnect.com";
+
 export const useCampaignForm = (editor: any, institutions: any[]) => {
   const [searchParams] = useSearchParams();
   const params = useParams();
@@ -24,8 +26,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
     recurring: false,
     timeSlots: [],
     campaignType: "EMAIL",
+    senderAddress: DEFAULT_CAMPAIGN_SENDER,
     fromName: "AbS",
-    fromEmail: "hello@abstechconnect.com",
+    fromEmail: DEFAULT_CAMPAIGN_SENDER,
   });
 
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -56,8 +59,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
       recurring: false,
       timeSlots: [],
       campaignType: "EMAIL",
+      senderAddress: DEFAULT_CAMPAIGN_SENDER,
       fromName: "AbS",
-      fromEmail: "hello@abstechconnect.com",
+      fromEmail: DEFAULT_CAMPAIGN_SENDER,
     });
     setExistingAttachments([]);
     setAttachments([]);
@@ -197,8 +201,9 @@ export const useCampaignForm = (editor: any, institutions: any[]) => {
         recurring: campaign.recurring || false,
         timeSlots: Array.isArray(campaign.timeSlots) ? campaign.timeSlots : [],
         campaignType: campaign.campaignType || "EMAIL",
+        senderAddress: campaign.senderAddress || DEFAULT_CAMPAIGN_SENDER,
         fromName: "AbS",
-        fromEmail: "hello@abstechconnect.com",
+        fromEmail: campaign.senderAddress || DEFAULT_CAMPAIGN_SENDER,
       });
 
       editor.commands.setContent(extractedContent);

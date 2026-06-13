@@ -77,6 +77,11 @@ export const campaignServiceApi = api.injectEndpoints({
       providesTags: ["Stats"],
     }),
 
+    getCampaignSenders: builder.query({
+      query: () => `/ads/campaigns/senders`,
+      providesTags: ["Campaigns"],
+    }),
+
     // ==========================
     // 📝 DRAFT MANAGEMENT
     // ==========================
@@ -160,6 +165,7 @@ export const {
   useDeleteCampaignMutation,
   useGetCampaignByIdQuery,
   useGetCampaignStatisticsQuery,
+  useGetCampaignSendersQuery,
   useSaveDraftMutation,
   useUpdateDraftMutation,
   useGetDraftsQuery,

@@ -101,6 +101,7 @@ export interface Campaign {
   updatedAt: Date;
   campaignType?: CampaignType;
   studentId?: string;
+  senderAddress?: string;
   attachments?: unknown;
   emailsSent: number;
   emailsFailed: number;

@@ -175,6 +175,7 @@ export const handleSaveDraft = async ({
     draftFormData.append("content", safeContent);
     draftFormData.append("targetAll", String(formData.targetAll));
     draftFormData.append("campaignType", formData.campaignType);
+    draftFormData.append("senderAddress", formData.senderAddress);
     draftFormData.append("sendNow", String(formData.sendNow));
     if (formData.sendAt) draftFormData.append("sendAt", formData.sendAt);
     if (formData.endAt) draftFormData.append("endAt", formData.endAt);
@@ -292,6 +293,7 @@ export const handleSubmit = async ({
     campaignData.append("sendNow", String(formData.sendNow));
     campaignData.append("recurring", String(formData.recurring));
     campaignData.append("campaignType", formData.campaignType);
+    campaignData.append("senderAddress", formData.senderAddress);
 
     if (draftId) {
       campaignData.append("campaignId", draftId);
