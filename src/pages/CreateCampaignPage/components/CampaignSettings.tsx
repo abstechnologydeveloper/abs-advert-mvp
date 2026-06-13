@@ -15,6 +15,10 @@ import {
 } from "lucide-react";
 import { MultiSelectDropdown } from "../../../components/MultiSelectDropdown";
 
+const DEFAULT_CAMPAIGN_SENDERS = [
+  { address: "career@abstechconnect.com", label: "AbS Career" },
+  { address: "Academics@abstechconnect.com", label: "AbS Academics" },
+];
 
 interface CampaignSettingsProps {
   formData: any;
@@ -240,10 +244,7 @@ export const CampaignSettings: React.FC<CampaignSettingsProps> = ({
                     className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
                     required
                   >
-                    {(campaignSenders.length
-                      ? campaignSenders
-                      : [{ address: "career@abstechconnect.com", label: "AbS Career" }]
-                    ).map((sender) => (
+                    {(campaignSenders.length ? campaignSenders : DEFAULT_CAMPAIGN_SENDERS).map((sender) => (
                       <option key={sender.address} value={sender.address}>
                         {sender.label} - {sender.address}
                       </option>
