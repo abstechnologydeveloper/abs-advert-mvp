@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, Lock, ArrowRight, X, Loader2 } from "lucide-react";
 import bgImage from "../assets/login-bg.svg";
-import logo from "../assets/logo.svg";
+import logo from "../assets/AbSAppLogo.png";
 import { useLoginUserMutation, useLoginWithGoogleMutation } from "../redux/auth/auth-apis";
 import { AuthStorage } from "../utils/authStorage";
 import toast from "react-hot-toast";

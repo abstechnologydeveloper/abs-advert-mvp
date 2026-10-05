@@ -14,7 +14,7 @@ import {
   MarketingTemplate,
   TemplateLibrary,
 } from "./components/TemplateLibrary";
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/AbSAppLogo.png";
 import {
   Eye,
   Send,

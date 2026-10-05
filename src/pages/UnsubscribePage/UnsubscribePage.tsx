@@ -21,7 +21,7 @@ export default function UnsubscribePage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img
-            src="https://aws-s3-aws-bucket.s3.us-east-1.amazonaws.com/uploads/1762192698428-ABS_New_Logo.jpg"
+            src="https://www.abstechconnect.com/AbSAppLogoBrand.jpg"
             alt="AbS Logo"
             className="h-16 w-auto mx-auto mb-4"
           />

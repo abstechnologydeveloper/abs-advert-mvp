@@ -1,5 +1,5 @@
 const ABS_LOGO_URL =
-  "https://www.abstechconnect.com/abs_logo.jpg";
+  "https://www.abstechconnect.com/AbSAppLogo.png";
 const ABS_WEB_URL = "https://www.abstechconnect.com/";
 const ABS_PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.abstech.absmvp.prod";
 const ABS_APP_STORE_URL = "https://apps.apple.com/app/abs-tech/id6502200174";
